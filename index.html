@@ -20,9 +20,9 @@
     <select id="dateDropdown"></select>
   </div>
 
-  <div id="heatmapDiv"></div>
   <div id="topArtist">Top artist of the day will appear here</div>
   <div id="barChartDiv"></div>
+  <div id="heatmapDiv"></div>
 
   <script>
     d3.csv("spotify_listening_history.csv", d3.autoType).then(function(data) {
@@ -111,6 +111,58 @@
         updateTopArtist(selectedDate);
         updatePieChart(selectedDate);
       });
+
+      // Calendar-style heatmap
+function getWeekOfMonth(date) {
+  const day = date.getDate();
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const startDay = start.getDay(); // 0 (Sun) to 6 (Sat)
+  return Math.floor((day + startDay - 1) / 7); // zero-based week number
+}
+
+// Aggregate by date
+const aggregated = Array.from(
+  d3.group(march2024, d => d.date),
+  ([date, values]) => ({
+    date: date,
+    totalMsPlayed: d3.sum(values, d => d.ms_played),
+    dayOfWeek: date.getDay(),          // 0 = Sunday
+    weekOfMonth: getWeekOfMonth(date)  // 0 = First week
+  })
+);
+
+// Prepare heatmap data
+const z = Array.from({ length: 6 }, () => Array(7).fill(null));
+const text = Array.from({ length: 6 }, () => Array(7).fill(""));
+
+aggregated.forEach(d => {
+  z[d.weekOfMonth][d.dayOfWeek] = d.totalMsPlayed;
+  text[d.weekOfMonth][d.dayOfWeek] = d.date.toISOString().slice(0, 10) + "<br>" + d.totalMsPlayed + " ms";
+});
+
+const calendarLayout = {
+  title: "Calendar Heatmap - March 2024",
+  xaxis: {
+    tickvals: [0, 1, 2, 3, 4, 5, 6],
+    ticktext: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    side: "top"
+  },
+  yaxis: {
+    tickvals: [0, 1, 2, 3, 4, 5],
+    ticktext: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
+    autorange: "reversed"
+  },
+  margin: { t: 60 }
+};
+
+Plotly.newPlot("heatmapDiv", [{
+  type: "heatmap",
+  z: z,
+  text: text,
+  hoverinfo: "text",
+  colorscale: "Viridis"
+}], calendarLayout);
+
 
 
 
