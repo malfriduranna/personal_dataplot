@@ -26,13 +26,21 @@
     d3.csv("spotify_listening_history.csv", d3.autoType).then(function(data) {
       
       // Parse each row: convert 'ts' to a Date, compute 'date' (YYYY-MM-DD) and 'year'
+    //   data.forEach(d => {
+    //     d.ts = new Date(d.ts);
+    //     // Create a date without time
+    //     d.date = new Date(d.ts.getFullYear(), d.ts.getMonth(), d.ts.getDate());
+    //     d.ms_played = +d.ms_played;
+    //     d.year = d.ts.getFullYear();
+    //   });
+
       data.forEach(d => {
         d.ts = new Date(d.ts);
-        // Create a date without time
         d.date = new Date(d.ts.getFullYear(), d.ts.getMonth(), d.ts.getDate());
-        d.ms_played = +d.ms_played;
+        d.ms_played = +d.ms_played || 0; // fallback to 0
         d.year = d.ts.getFullYear();
-      });
+        });
+
 
       // Populate the dropdown with unique years
       const years = Array.from(new Set(data.map(d => d.year))).sort();
@@ -45,7 +53,7 @@
         .text(d => d);
 
       // Set initial selected year
-      let selectedYear = years[0];
+      let selectedYear = years[2];
 
       // Function to update the calendar heatmap for a given year
       function updateHeatmap(year) {
@@ -147,23 +155,34 @@
           return;
         }
 
-        // Group by artist and sum ms_played
+        // // Group by artist and sum ms_played
+        // let artistMap = d3.rollup(weekData,
+        //   v => d3.sum(v, d => d.ms_played),
+        //   d => d.master_metadata_album_artist_name
+        // );
         let artistMap = d3.rollup(weekData,
-          v => d3.sum(v, d => d.ms_played),
-          d => d.master_metadata_album_artist_name
-        );
+            v => d3.sum(v, d => d.ms_played),
+            d => d.master_metadata_album_artist_name || "Unknown"
+            );
+
 
         let artistArray = Array.from(artistMap, ([artist, total]) => ({ artist, total }));
         // Sort descending and take the top 5 artists
         artistArray.sort((a, b) => b.total - a.total);
         let top5 = artistArray.slice(0, 5);
 
-        // Create the bar chart using Plotly
+        // // Create the bar chart using Plotly
+        // let barData = [{
+        //   x: top5.map(d => d.artist),
+        //   y: top5.map(d => d.total),
+        //   type: 'bar'
+        // }];
         let barData = [{
-          x: top5.map(d => d.artist),
-          y: top5.map(d => d.total),
-          type: 'bar'
-        }];
+            x: top5.map(d => String(d.artist)),
+            y: top5.map(d => d.total),
+            type: 'bar',
+            marker: { color: 'teal' }
+            }];
 
         let barLayout = {
           title: "Top 5 Artists - Week " + weekNumber + " of " + year,
