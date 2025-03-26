@@ -163,6 +163,21 @@ Plotly.newPlot("heatmapDiv", [{
   colorscale: "Viridis"
 }], calendarLayout);
 
+document.getElementById("heatmapDiv").on("plotly_click", function(clickData) {
+  if (clickData && clickData.points && clickData.points.length > 0) {
+    const point = clickData.points[0];
+    const clickedDate = point.text.split("<br>")[0]; // format: YYYY-MM-DD
+
+    // Update dropdown selection to match
+    d3.select("#dateDropdown").property("value", clickedDate);
+
+    // Call the same update functions
+    updateTopArtist(clickedDate);
+    updatePieChart(clickedDate);
+  }
+});
+
+
 
 
 
