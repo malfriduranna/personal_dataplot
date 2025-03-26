@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Spotify Listening Calendar Heatmap</title>
+  <!-- Load D3.js and Plotly.js from CDNs -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    #controls { margin-bottom: 20px; }
+    #heatmapDiv, #barChartDiv { width: 100%; max-width: 900px; margin: auto; }
+  </style>
+</head>
+<body>
+  <h1>Spotify Listening Calendar Heatmap</h1>
+  <div id="controls">
+    <label for="yearDropdown">Select Year:</label>
+    <select id="yearDropdown"></select>
+  </div>
+  <div id="heatmapDiv"></div>
+  <div id="barChartDiv"></div>
+
+  <script>
+    // Load the CSV file (make sure spotify_listening_history.csv is in the same directory)
+    d3.csv("spotify_listening_history.csv", d3.autoType).then(function(data) {
+      
+      // Parse each row: convert 'ts' to a Date, compute 'date' (YYYY-MM-DD) and 'year'
+      data.forEach(d => {
+        d.ts = new Date(d.ts);
+        // Create a date without time
+        d.date = new Date(d.ts.getFullYear(), d.ts.getMonth(), d.ts.getDate());
+        d.ms_played = +d.ms_played;
+        d.year = d.ts.getFullYear();
+      });
+
+      // Populate the dropdown with unique years
+      const years = Array.from(new Set(data.map(d => d.year))).sort();
+      const yearDropdown = d3.select("#yearDropdown");
+      yearDropdown.selectAll("option")
+        .data(years)
+        .enter()
+        .append("option")
+        .attr("value", d => d)
+        .text(d => d);
+
+      // Set initial selected year
+      let selectedYear = years[0];
+
+      // Function to update the calendar heatmap for a given year
+      function updateHeatmap(year) {
+        // Filter data for the selected year
+        let yearData = data.filter(d => d.year === year);
+
+        // Aggregate daily listening: group by date string (YYYY-MM-DD) and sum ms_played
+        let dailyData = d3.rollup(yearData,
+          v => d3.sum(v, d => d.ms_played),
+          d => d.date.toISOString().slice(0,10)
+        );
+
+        // Convert aggregated data into an array of objects
+        let dailyArray = Array.from(dailyData, ([key, value]) => ({ date: new Date(key), ms_played: value }));
+
+        // Calculate week numbers relative to Jan 1 of the selected year
+        let jan1 = new Date(year, 0, 1);
+        // Calculate maximum week number (using Dec 31)
+        let dec31 = new Date(year, 11, 31);
+        let maxWeek = Math.floor((dec31 - jan1) / (7 * 24 * 3600 * 1000));
+
+        // Create a matrix (array of arrays) for weeks (rows) and days (columns)
+        let weeks = [];
+        for (let w = 0; w <= maxWeek; w++) {
+          weeks.push(Array(7).fill(null));
+        }
+
+        // For each day, calculate its week and adjusted day-of-week (Monday=0)
+        dailyArray.forEach(d => {
+          let week = Math.floor((d.date - jan1) / (7 * 24 * 3600 * 1000));
+          // JavaScript's getDay(): Sunday=0, Monday=1,... so adjust: (day+6)%7
+          let day = (d.date.getDay() + 6) % 7;
+          if (week < weeks.length) {
+            weeks[week][day] = d.ms_played;
+          }
+        });
+
+        // X-axis: weekdays (Monday to Sunday)
+        let days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        // Y-axis: week numbers (0-indexed)
+        let weekLabels = d3.range(0, weeks.length);
+
+        // Create the heatmap using Plotly
+        let heatmapData = [{
+          z: weeks,
+          x: days,
+          y: weekLabels,
+          type: 'heatmap',
+          colorscale: 'Viridis',
+          hoverongaps: false
+        }];
+
+        let heatmapLayout = {
+          title: "Calendar Heatmap for " + year,
+          xaxis: { title: "Day of Week" },
+          yaxis: { title: "Week Number", autorange: "reversed" },
+          margin: { t: 50 }
+        };
+
+        Plotly.newPlot('heatmapDiv', heatmapData, heatmapLayout);
+        // Clear any previous bar chart
+        Plotly.newPlot('barChartDiv', [], { title: "Top 5 Artists for Selected Week" });
+      }
+
+      // Update heatmap initially
+      updateHeatmap(selectedYear);
+
+      // Update heatmap when year selection changes
+      yearDropdown.on("change", function() {
+        selectedYear = +this.value;
+        updateHeatmap(selectedYear);
+      });
+
+      // Add a click event listener to the heatmap to get the week number clicked
+      let heatmapDiv = document.getElementById('heatmapDiv');
+      heatmapDiv.on('plotly_click', function(clickData) {
+        if (clickData.points && clickData.points.length > 0) {
+          // 'y' value is the week number
+          let clickedWeek = clickData.points[0].y;
+          updateBarChart(selectedYear, clickedWeek);
+        }
+      });
+
+      // Function to update the bar chart with top 5 artists for a given week
+      function updateBarChart(year, weekNumber) {
+        // Filter data for the selected year
+        let yearData = data.filter(d => d.year === year);
+        let jan1 = new Date(year, 0, 1);
+        
+        // Compute week number for each record
+        yearData.forEach(d => {
+          d.week = Math.floor((d.date - jan1) / (7 * 24 * 3600 * 1000));
+        });
+
+        // Filter data for the selected week
+        let weekData = yearData.filter(d => d.week === weekNumber);
+        if (weekData.length === 0) {
+          Plotly.newPlot('barChartDiv', [], { title: "No data for week " + weekNumber });
+          return;
+        }
+
+        // Group by artist and sum ms_played
+        let artistMap = d3.rollup(weekData,
+          v => d3.sum(v, d => d.ms_played),
+          d => d.master_metadata_album_artist_name
+        );
+
+        let artistArray = Array.from(artistMap, ([artist, total]) => ({ artist, total }));
+        // Sort descending and take the top 5 artists
+        artistArray.sort((a, b) => b.total - a.total);
+        let top5 = artistArray.slice(0, 5);
+
+        // Create the bar chart using Plotly
+        let barData = [{
+          x: top5.map(d => d.artist),
+          y: top5.map(d => d.total),
+          type: 'bar'
+        }];
+
+        let barLayout = {
+          title: "Top 5 Artists - Week " + weekNumber + " of " + year,
+          xaxis: { title: "Artist" },
+          yaxis: { title: "Total ms_played" }
+        };
+
+        Plotly.newPlot('barChartDiv', barData, barLayout);
+      }
+    });
+  </script>
+</body>
+</html>
