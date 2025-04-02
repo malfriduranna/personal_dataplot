@@ -1,3 +1,49 @@
+
+:root {
+  --spotify-color: #4caf4f;
+  --dark-green-color: #11865b;
+  --pastel-green-color: #c5ecb2;
+  --header-color: #f5f7fa;
+  --white-color: #fff;
+  --black-color: #000;
+  --bg-color: #f9f9f9;
+
+  --font-large-size: 2.5rem;
+  --font-medium-size: 1.5rem;
+  --font-small-size: 1rem;
+  --font-main: "Inter", sans-serif;
+
+  --border-radius: 20px;
+
+  --spacing: 1rem;
+
+  --max-width: 1200px;
+}
+
+html,
+body {
+  background: white;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  min-height: 400px;
+}
+
+.layout {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  padding-bottom: 60px; 
+}
 /* --- General Styles --- */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -7,11 +53,7 @@ body {
     color: #343a40;
     font-size: 14px; /* Base font size */
 }
-header {
-    background-color: #343a40;
-    padding: 0.5rem 2rem;
-    margin: -1rem -2rem 1.5rem -2rem;
-}
+
 nav a {
     color: #dee2e6; text-decoration: none; padding: 0.5rem 1rem; font-weight: 500; transition: color 0.2s ease;
 }

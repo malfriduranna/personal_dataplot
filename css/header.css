@@ -1,0 +1,39 @@
+.header {
+  background: var(--header-color);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing);
+  height: 30px;
+}
+
+.header_logo {
+  margin-left: var(--spacing);
+  width: 30px;
+  height: auto;
+}
+
+.button {
+  margin-right: var(--spacing);
+  background: none;
+  border: none;
+}
+.button a {
+  color: var(--spotify-color);
+}
+
+.header_nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+.header_nav li {
+  display: inline;
+  margin: 0 10px;
+}
+
+.header_nav a {
+  color: var(--black-color);
+  text-decoration: none;
+}

@@ -1,0 +1,116 @@
+.top_overview {
+  min-height: 600px;
+  width: 100%;
+}
+
+.overview_container {
+  display: flex;
+  gap: calc(var(--spacing) * 2);
+  align-items: flex-start;
+  
+}
+
+.overview_container_card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.overview_container_card.left {
+  display: flex;
+  flex-direction: row;
+  flex: 2;
+  gap: calc(var(--spacing) * 2);
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+.card_container {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  max-width: 350px;
+}
+
+.card_container h2 {
+  font-weight: 200;
+  text-align: center;
+}
+
+.index_top_card {
+  flex: 1;
+  background: var(--header-color);
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  border-radius: var(--border-radius);
+  padding: calc(var(--spacing) / 2);
+}
+
+.artist-card,
+.song-card {
+  display: flex;
+  flex-direction: row;
+  padding: calc(var(--spacing) / 2);
+  width: 100%;
+  text-align: left;
+}
+
+.artist-content,
+.song-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+.artist-img,
+.song-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.artists-content-text p {
+  font-size: larger;
+}
+
+.summary-box {
+  border: 1px solid var(--dark-green-color);
+  border-radius: var(--border-radius);
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  margin-top: var(--spacing);
+}
+
+.summary-box p {
+  margin: 0.5rem 0;
+}
+
+.dropdown {
+  appearance: none;
+  background-color: white;
+  border: 1px solid var(--black-color);
+  border-radius: calc(var(--border-radius)/2);
+  padding: 0.4rem 1rem;
+  font-size: var(--font-small-size);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 40%;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg fill='%232ecc71' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.65rem;
+}
+
+.dropdown:hover {
+  border-color: var(--black-color, #444);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
