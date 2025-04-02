@@ -1,0 +1,101 @@
+/* --- General Styles --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    margin: 0;
+    padding: 1rem 2rem;
+    background-color: #f8f9fa;
+    color: #343a40;
+    font-size: 14px; /* Base font size */
+}
+header {
+    background-color: #343a40;
+    padding: 0.5rem 2rem;
+    margin: -1rem -2rem 1.5rem -2rem;
+}
+nav a {
+    color: #dee2e6; text-decoration: none; padding: 0.5rem 1rem; font-weight: 500; transition: color 0.2s ease;
+}
+nav a.active, nav a:hover { color: #ffffff; }
+h1 { font-size: 2rem; margin-bottom: 1.5rem; color: #212529; }
+h2 { font-size: 1.3rem; margin-bottom: 0.8rem; color: #212529; border-bottom: 1px solid #e0e0e0; padding-bottom: 0.3rem;}
+h3 { font-size: 1.1rem; margin-top: 0; margin-bottom: 0.5rem; color: #495057;}
+
+/* --- Controls --- */
+.controls {
+    background-color: #ffffff; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+}
+.controls label { margin-right: 0.5rem; font-weight: 500; }
+.controls select, .controls input[type="date"], .controls button {
+    padding: 0.4rem 0.6rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9rem;
+}
+.controls button {
+    background-color: #0d6efd; color: white; border-color: #0d6efd; cursor: pointer; transition: background-color 0.2s ease;
+}
+.controls button:hover { background-color: #0b5ed7; }
+
+/* --- Layout --- */
+.visualization-area { display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 2rem; align-items: flex-start; }
+#calendar-container { min-width: 600px; flex-shrink: 0; }
+#top-artists-container { background-color: #ffffff; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex: 1; min-width: 250px; }
+
+.charts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    width: 100%; /* Take full width */
+    margin-top: 2rem;
+}
+.chart-container {
+     background-color: #ffffff; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+     flex: 1 1 300px; /* Flex grow, shrink, basis */
+     min-width: 300px; /* Minimum width before wrapping */
+}
+.chart-container svg {
+    display: block; /* Prevent extra space below SVG */
+    width: 100%; /* Make SVG responsive within container */
+    height: auto;
+}
+
+/* --- Calendar Styles --- */
+#calendar svg { font-family: inherit; }
+#calendar .day-label { font-size: 9px; fill: #6c757d; text-anchor: middle; dominant-baseline: middle; }
+#calendar .month-label { font-size: 10px; fill: #495057; font-weight: 500; }
+#calendar rect.day-cell { stroke: #ffffff; stroke-width: 1.5px; rx: 2; ry: 2; transition: fill 0.3s ease; }
+#calendar rect.day-cell:hover { stroke: #343a40; stroke-width: 1px; }
+#legend { margin-top: 1rem; }
+#legend .legend-label { font-size: 0.8rem; fill: #6c757d; }
+.selected-range-label { font-size: 0.9rem; fill: #343a40; font-style: italic; }
+
+/* --- Tooltip --- */
+#tooltip {
+    position: absolute; background-color: rgba(0, 0, 0, 0.85); color: white; padding: 6px 12px; border-radius: 4px;
+    font-size: 0.85rem; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; white-space: nowrap; z-index: 10;
+}
+
+/* --- Top Artists Styles --- */
+#topArtists { list-style: none; padding: 0; margin: 0; font-size: 0.95rem; }
+#topArtists li { margin-bottom: 0.8rem; line-height: 1.4; }
+#topArtists .artist-info { display: block; margin-bottom: 0.2rem; }
+#topArtists .artist-name { font-weight: 500; }
+#topArtists .artist-time { color: #6c757d; font-size: 0.85rem; margin-left: 5px; }
+#topArtists .bar-container { height: 6px; background-color: #e9ecef; border-radius: 3px; overflow: hidden; width: 100%; }
+#topArtists .bar { height: 100%; background-color: #1DB954; border-radius: 3px; transition: width 0.3s ease-out; }
+
+/* --- New Chart Styles --- */
+.axis-label { font-size: 0.8rem; fill: #343a40; font-weight: 500;}
+.axis path, .axis line { stroke: #adb5bd; }
+.axis text { fill: #495057; font-size: 0.75rem; }
+.bar { transition: fill 0.2s ease; }
+.bar:hover { fill: #17a2b8; } /* Example hover color */
+.pie-slice path { stroke: #ffffff; stroke-width: 1px; transition: fill 0.2s ease; }
+.pie-slice path:hover { opacity: 0.85; }
+
+/* --- Messages --- */
+ .empty-message, .info-message {
+     color: #6c757d; font-style: italic; padding: 1rem; text-align: center; font-size: 0.9rem;
+ }
+ .error-message {
+     color: #dc3545; font-style: italic; padding: 1rem; text-align: center; font-weight: 500; font-size: 0.9rem;
+ }
+ #topArtists .empty-message { padding: 1rem 0; } /* Adjust artist list message padding */

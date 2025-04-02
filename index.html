@@ -1,189 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Spotify Listening</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    #controls { margin-bottom: 20px; text-align: center; }
-    #heatmapDiv, #barChartDiv { width: 100%; max-width: 900px; margin: auto; }
-    #topArtist { text-align: center; font-size: 1.2em; margin-top: 20px; }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Dashboard - Enhanced</title>
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Link to the external D3.js library -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
-  <h1>Spotify Listening</h1>
+    <header>
+        <nav>
+            <a href="#">Home</a> <!-- Placeholder -->
+            <a href="#" class="active">Dashboard</a> <!-- Placeholder -->
+        </nav>
+    </header>
 
-  <div id="controls">
-    <label for="dateDropdown">Select a day in March 2024:</label>
-    <select id="dateDropdown"></select>
-  </div>
+    <main>
+        <h1>Spotify Listening Dashboard</h1>
 
-  <div id="topArtist">Top artist of the day will appear here</div>
-  <div id="barChartDiv"></div>
-  <div id="heatmapDiv"></div>
+        <div class="controls">
+             <div><label for="yearSelect">Quick Select Year:</label><select id="yearSelect"></select></div>
+            <div> | </div>
+            <div><label for="startDate">Start Date:</label><input type="date" id="startDate" /></div>
+            <div><label for="endDate">End Date:</label><input type="date" id="endDate" /></div>
+            <button id="applyRangeBtn">Apply Range</button>
+        </div>
 
-  <script>
-    d3.csv("spotify_listening_history.csv", d3.autoType).then(function(data) {
-      // Parse dates and prepare data
-      data.forEach(d => {
-        d.ts = new Date(d.ts);
-        d.date = new Date(d.ts.getFullYear(), d.ts.getMonth(), d.ts.getDate());
-        d.ms_played = +d.ms_played || 0;
-        d.year = d.ts.getFullYear();
-      });
+        <div class="visualization-area">
+            <div id="calendar-container">
+                <h2>Daily Listening</h2>
+                <div id="calendar"></div>
+                <div id="legend"></div>
+            </div>
+            <div id="top-artists-container">
+                <h2>Top 5 Artists</h2>
+                <ul id="topArtists"></ul>
+            </div>
+        </div>
 
-      // Filter to March 2024 (note: JS months are 0-indexed)
-      const march2024 = data.filter(d => d.year === 2024 && d.ts.getMonth() === 2);
-
-      // Group by day (ISO format string)
-      const groupedByDate = d3.group(march2024, d => d.date.toISOString().slice(0, 10));
-
-      // Populate dropdown with available days
-      const dropdown = d3.select("#dateDropdown");
-      Array.from(groupedByDate.keys()).forEach(date => {
-        dropdown.append("option").text(date).attr("value", date);
-      });
-
-      // Display top artist
-      function updateTopArtist(selectedDate) {
-        const plays = groupedByDate.get(selectedDate);
-        if (!plays || plays.length === 0) {
-          d3.select("#topArtist").text("No data for this day.");
-          return;
-        }
-
-        const artistGroup = d3.rollup(
-          plays,
-          v => d3.sum(v, d => d.ms_played),
-          d => d.master_metadata_album_artist_name
-        );
-
-        const sorted = Array.from(artistGroup.entries()).sort((a, b) => b[1] - a[1]);
-        const topArtist = sorted[0];
-
-        // conver topArtist[1] from ms to minutes
-        topArtist[1] = Math.round(topArtist[1] / 60000);
-        d3.select("#topArtist").html(
-          `🎧 <strong>${topArtist[0] || 'Unknown Artist'}</strong> was your top artist on <strong>${selectedDate}</strong> with ${topArtist[1]} minutes played.`
-        );
-      }
-
-      // Display pie chart of top 3 artists
-      function updatePieChart(selectedDate) {
-        const plays = groupedByDate.get(selectedDate);
-        if (!plays || plays.length === 0) return;
-
-        const artistGroup = d3.rollup(
-          plays,
-          v => d3.sum(v, d => d.ms_played),
-          d => d.master_metadata_album_artist_name
-        );
-
-        const sorted = Array.from(artistGroup.entries()).sort((a, b) => b[1] - a[1]);
-        const topArtists = sorted.slice(0, 3);
-
-        const labels = topArtists.map(d => d[0] || 'Unknown');
-        const values = topArtists.map(d => d[1]);
-
-        const pieData = [{
-          labels: labels,
-          values: values,
-          type: "pie"
-        }];
-
-        Plotly.newPlot("barChartDiv", pieData, {
-          title: "Top 3 Artists on " + selectedDate
-        });
-      }
-
-      // Initial display
-      const initialDate = dropdown.node().value;
-      if (initialDate) {
-        updateTopArtist(initialDate);
-        updatePieChart(initialDate);
-      }
-
-      // Combined event listener
-      dropdown.on("change", function() {
-        const selectedDate = this.value;
-        updateTopArtist(selectedDate);
-        updatePieChart(selectedDate);
-      });
-
-      // Calendar-style heatmap
-function getWeekOfMonth(date) {
-  const day = date.getDate();
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const startDay = start.getDay(); // 0 (Sun) to 6 (Sat)
-  return Math.floor((day + startDay - 1) / 7); // zero-based week number
-}
-
-// Aggregate by date
-const aggregated = Array.from(
-  d3.group(march2024, d => d.date),
-  ([date, values]) => ({
-    date: date,
-    totalMsPlayed: d3.sum(values, d => d.ms_played),
-    dayOfWeek: date.getDay(),          // 0 = Sunday
-    weekOfMonth: getWeekOfMonth(date)  // 0 = First week
-  })
-);
-
-// Prepare heatmap data
-const z = Array.from({ length: 6 }, () => Array(7).fill(null));
-const text = Array.from({ length: 6 }, () => Array(7).fill(""));
-
-aggregated.forEach(d => {
-  z[d.weekOfMonth][d.dayOfWeek] = d.totalMsPlayed;
-  text[d.weekOfMonth][d.dayOfWeek] = d.date.toISOString().slice(0, 10) + "<br>" + d.totalMsPlayed + " ms";
-});
-
-const calendarLayout = {
-  title: "Calendar Heatmap - March 2024",
-  xaxis: {
-    tickvals: [0, 1, 2, 3, 4, 5, 6],
-    ticktext: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-    side: "top"
-  },
-  yaxis: {
-    tickvals: [0, 1, 2, 3, 4, 5],
-    ticktext: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
-    autorange: "reversed"
-  },
-  margin: { t: 60 }
-};
-
-Plotly.newPlot("heatmapDiv", [{
-  type: "heatmap",
-  z: z,
-  text: text,
-  hoverinfo: "text",
-  colorscale: "Viridis"
-}], calendarLayout);
-
-document.getElementById("heatmapDiv").on("plotly_click", function(clickData) {
-  if (clickData && clickData.points && clickData.points.length > 0) {
-    const point = clickData.points[0];
-    const clickedDate = point.text.split("<br>")[0]; // format: YYYY-MM-DD
-
-    // Update dropdown selection to match
-    d3.select("#dateDropdown").property("value", clickedDate);
-
-    // Call the same update functions
-    updateTopArtist(clickedDate);
-    updatePieChart(clickedDate);
-  }
-});
+        <!-- Row for additional charts -->
+        <div class="charts-row">
+            <div class="chart-container" id="top-tracks-container">
+                 <h2>Top Tracks</h2>
+                 <div id="top-tracks-chart"></div>
+            </div>
+            <div class="chart-container" id="time-of-day-container">
+                 <h2>Listening by Time of Day</h2>
+                 <div id="time-of-day-chart"></div>
+            </div>
+            <div class="chart-container" id="day-of-week-container">
+                 <h2>Listening by Day of Week</h2>
+                 <div id="day-of-week-chart"></div>
+            </div>
+             <!-- <div class="chart-container" id="genre-container">
+                 <h2>Genre Breakdown</h2>
+                 <div id="genre-chart"></div>
+            </div> -->
+        </div>
 
 
+        <!-- Tooltip Div -->
+        <div id="tooltip"></div>
 
+    </main>
 
-
-
-
-    });
-  </script>
+    <!-- Link to the external JavaScript file (defer ensures HTML is parsed first) -->
+    <script src="scripts/spotifyDashboard.js" type="module" defer></script>
 </body>
 </html>
