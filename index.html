@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -44,9 +43,55 @@
           <h1>Overview</h1>
           <div class="top_overview" id="include-overview"></div>
         </section>
-      </main>
+        
+                <h1>Spotify Listening Dashboard</h1>
 
-      <footer class="footer">
+        <div class="controls">
+             <div><label for="yearSelect">Quick Select Year:</label><select id="yearSelect"></select></div>
+            <div> | </div>
+            <div><label for="startDate">Start Date:</label><input type="date" id="startDate" /></div>
+            <div><label for="endDate">End Date:</label><input type="date" id="endDate" /></div>
+            <button id="applyRangeBtn">Apply Range</button>
+        </div>
+
+        <div class="visualization-area">
+            <div id="calendar-container">
+                <h2>Daily Listening</h2>
+                <div id="calendar"></div>
+                <div id="legend"></div>
+            </div>
+            <div id="top-artists-container">
+                <h2>Top 5 Artists</h2>
+                <ul id="topArtists"></ul>
+            </div>
+        </div>
+
+        <!-- Row for additional charts -->
+        <div class="charts-row">
+            <div class="chart-container" id="top-tracks-container">
+                 <h2>Top Tracks</h2>
+                 <div id="top-tracks-chart"></div>
+            </div>
+            <div class="chart-container" id="time-of-day-container">
+                 <h2>Listening by Time of Day</h2>
+                 <div id="time-of-day-chart"></div>
+            </div>
+            <div class="chart-container" id="day-of-week-container">
+                 <h2>Listening by Day of Week</h2>
+                 <div id="day-of-week-chart"></div>
+            </div>
+             <!-- <div class="chart-container" id="genre-container">
+                 <h2>Genre Breakdown</h2>
+                 <div id="genre-chart"></div>
+            </div> -->
+        </div>
+
+
+        <!-- Tooltip Div -->
+        <div id="tooltip"></div>
+      </main>
+      
+       <footer class="footer">
         <img src="/img/logo.png" class="footer_logo" alt="Logo" />
         <nav class="footer_nav">
           <ul>
@@ -57,9 +102,15 @@
         </nav>
         <p class="footer_text">© 2025 YourSiteName</p>
       </footer>
+
     </div>
 
-    <script>
+
+
+    <!-- Link to the external JavaScript file (defer ensures HTML is parsed first) -->
+    <script src="scripts/spotifyDashboard.js" type="module" defer></script>
+
+     <script>
       fetch("/components/index_overview.html")
         .then((response) => response.text())
         .then((data) => {
@@ -71,5 +122,5 @@
           document.body.appendChild(script);
         });
     </script>
-  </body>
+</body>
 </html>
