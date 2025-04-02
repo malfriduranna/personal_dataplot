@@ -1,0 +1,17 @@
+.info, .overview {
+  margin-top: calc(var(--spacing)/2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.info h1, .overview h1 {
+  font-size: var(--font-large-size);
+}
+
+.info_text {
+  background: var(--pastel-green-color);
+  padding: var(--spacing);
+  border: 1px solid var(--dark-green-color);
+  border-radius: var(--border-radius); /* change this value for more/less roundness */
+}

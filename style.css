@@ -1,0 +1,45 @@
+:root {
+  --spotify-color: #4caf4f;
+  --dark-green-color: #11865b;
+  --pastel-green-color: #c5ecb2;
+  --header-color: #f5f7fa;
+  --white-color: #fff;
+  --black-color: #000;
+  --bg-color: #f9f9f9;
+
+  --font-large-size: 2.5rem;
+  --font-medium-size: 1.5rem;
+  --font-small-size: 1rem;
+  --font-main: "Inter", sans-serif;
+
+  --border-radius: 20px;
+
+  --spacing: 1rem;
+
+  --max-width: 1200px;
+}
+
+html,
+body {
+  background: white;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  min-height: 400px;
+}
+
+.layout {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  padding-bottom: 60px; 
+}
