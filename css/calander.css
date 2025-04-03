@@ -1,0 +1,46 @@
+#calendar svg {
+  font-family: var(--font-main);
+}
+
+#calendar .day-label {
+  font-size: 9px;
+  /* Using header-color as a substitute for a muted color */
+  fill: var(--header-color);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+#calendar .month-label {
+  font-size: 10px;
+  /* Using dark-green-color for emphasis */
+  fill: var(--dark-green-color);
+  font-weight: 500;
+}
+
+#calendar rect.day-cell {
+  stroke: var(--white-color);
+  stroke-width: 1.5px;
+  rx: 2;
+  ry: 2;
+  transition: fill 0.3s ease;
+}
+
+#calendar rect.day-cell:hover {
+  stroke: var(--black-color);
+  stroke-width: 1px;
+}
+
+#legend {
+  margin-top: 1rem;
+}
+
+#legend .legend-label {
+  font-size: 0.8rem;
+  fill: var(--header-color);
+}
+
+.selected-range-label {
+  font-size: 0.9rem;
+  fill: var(--black-color);
+  font-style: italic;
+}

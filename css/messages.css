@@ -1,0 +1,18 @@
+.empty-message,
+.info-message {
+  /* Using header-color as the text color for messages */
+  color: var(--header-color);
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.error-message {
+  color: #dc3545; /* kept custom if you wish to retain a specific error color */
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+}

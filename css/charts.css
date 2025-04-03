@@ -1,0 +1,35 @@
+.axis-label {
+  font-size: 0.8rem;
+  fill: var(--black-color);
+  font-weight: 500;
+}
+
+.axis path,
+.axis line {
+  /* Using header-color for axis lines */
+  stroke: var(--header-color);
+}
+
+.axis text {
+  fill: var(--dark-green-color);
+  font-size: 0.75rem;
+}
+
+.bar {
+  transition: fill 0.2s ease;
+}
+
+.bar:hover {
+  /* On hover, switching to pastel-green-color */
+  fill: var(--pastel-green-color);
+}
+
+.pie-slice path {
+  stroke: var(--white-color);
+  stroke-width: 1px;
+  transition: fill 0.2s ease;
+}
+
+.pie-slice path:hover {
+  opacity: 0.85;
+}

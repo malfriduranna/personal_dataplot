@@ -1,0 +1,47 @@
+#topArtists {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--font-small-size);
+}
+
+#topArtists li {
+  margin-bottom: 0.8rem;
+  line-height: 1.4;
+}
+
+#topArtists .artist-info {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+#topArtists .artist-name {
+  font-weight: 500;
+}
+
+#topArtists .artist-time {
+  /* Using header-color for text, adjust if you prefer a different tone */
+  color: var(--header-color);
+  font-size: 0.85rem;
+  margin-left: 5px;
+}
+
+#topArtists .bar-container {
+  height: 6px;
+  background-color: var(--bg-color);
+  border-radius: 3px;
+  overflow: hidden;
+  width: 100%;
+}
+
+#topArtists .bar {
+  height: 100%;
+  /* Using spotify-color for the bar fill */
+  background-color: var(--spotify-color);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+#topArtists .empty-message {
+  padding: 1rem 0;
+}

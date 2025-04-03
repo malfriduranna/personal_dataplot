@@ -1,0 +1,42 @@
+.visualization-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+  margin-top: calc(var(--spacing) * 2);
+  align-items: flex-start;
+}
+
+#calendar-container {
+  min-width: 600px;
+  flex-shrink: 0;
+}
+
+#top-artists-container {
+  padding: 1rem 1.5rem;
+  border-radius: var(--border-radius-small);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  flex: 1;
+  min-width: 250px;
+}
+
+.charts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+  width: 100%;
+  margin-top: calc(var(--spacing) * 2);
+}
+
+.chart-container {
+  padding: 1rem 1.5rem;
+  border-radius: var(--border-radius-small);
+  box-shadow: var(--box-shadow);
+  flex: 1 1 300px; /* Grow, shrink, basis */
+  min-width: 300px;
+}
+
+.chart-container svg {
+  display: block; /* Prevent extra space below SVG */
+  width: 100%; /* Responsive width */
+  height: auto;
+}
