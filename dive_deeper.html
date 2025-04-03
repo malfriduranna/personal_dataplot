@@ -1,0 +1,130 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Spotify Listening</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/header.css" />
+    <link rel="stylesheet" href="css/footer.css" />
+    <link rel="stylesheet" href="css/info.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="header">
+        <img src="/img/logo.png" class="header_logo" alt="Logo" />
+        <nav class="header_nav">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/top_things">Top Things</a></li>
+            <li><a href="/compare">Compare</a></li>
+            <li><a href="/dive_deeper">Dive Deeper</a></li>
+          </ul>
+        </nav>
+        <button class="button"><a>Login</a></button>
+      </header>
+
+      <main class="main">
+        <section class="info">
+          <h1>Dive deeper into your listening to a certain Artist</h1>
+          <div class="info_text">
+            <p>Welcome to your Spotify Trends & Habits Analyzer!</p>
+            <p>
+              Discover how you listen to music—track your top artists, explore
+              seasonal trends, and see when you hit play the most. Compare
+              different time periods, uncover shifts in your music taste, and
+              dive into interactive charts for a fun and insightful look at your
+              listening habits. Ready to explore your music journey?
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <div class="artist-search">
+            <input
+              type="text"
+              id="artistSearchInput"
+              placeholder="Enter Artist Name"
+            />
+            <button id="artistSearchBtn">Search Artist</button>
+          </div>
+          <div id="artistListeningDepthChart"></div>
+          <div
+            id="tooltip"
+            style="
+              position: absolute;
+              opacity: 0;
+              pointer-events: none;
+              background: rgba(0, 0, 0, 0.7);
+              color: #fff;
+              padding: 4px;
+              border-radius: 4px;
+            "
+          ></div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <img src="/img/logo.png" class="footer_logo" alt="Logo" />
+        <nav class="footer_nav">
+          <ul>
+            <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact</a></li>
+            <li><a href="/privacy">Privacy</a></li>
+          </ul>
+        </nav>
+        <p class="footer_text">© 2025 YourSiteName</p>
+      </footer>
+    </div>
+
+    <!-- Load CSV data and then dynamically load your script file -->
+    <script>
+      // Fetch and load the CSV data
+      fetch("data/astrid_data.csv")
+        .then((response) => response.text())
+        .then((csvText) => {
+          // Parse CSV text using d3.csvParse
+          const data = d3.csvParse(csvText);
+
+          // Process the data (convert numbers and dates)
+          window.allParsedData = data.map((d) => ({
+            ts: new Date(d.ts),
+            platform: d.platform,
+            ms_played: +d.ms_played,
+            conn_country: d.conn_country,
+            ip_addr: d.ip_addr,
+            master_metadata_track_name: d.master_metadata_track_name,
+            master_metadata_album_artist_name:
+              d.master_metadata_album_artist_name,
+            master_metadata_album_album_name:
+              d.master_metadata_album_album_name,
+            spotify_track_uri: d.spotify_track_uri,
+            episode_name: d.episode_name,
+            episode_show_name: d.episode_show_name,
+            spotify_episode_uri: d.spotify_episode_uri,
+            audiobook_title: d.audiobook_title,
+            audiobook_uri: d.audiobook_uri,
+            audiobook_chapter_uri: d.audiobook_chapter_uri,
+            audiobook_chapter_title: d.audiobook_chapter_title,
+            reason_start: d.reason_start,
+            reason_end: d.reason_end,
+            shuffle: d.shuffle,
+            skipped: d.skipped,
+            offline: d.offline,
+            offline_timestamp: d.offline_timestamp,
+            incognito_mode: d.incognito_mode,
+          }));
+
+          // Once data is loaded, dynamically load your script file that contains:
+          // updateAlbumDistributionChart, updateParallelCoordinatesPlot, etc.
+          const script = document.createElement("script");
+          script.src = "/scripts/listeningDepth.js";
+          script.defer = true;
+          document.body.appendChild(script);
+        })
+        .catch((error) => {
+          console.error("Error loading CSV data:", error);
+        });
+    </script>
+  </body>
+</html>
