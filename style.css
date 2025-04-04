@@ -39,6 +39,7 @@ main {
   max-width: var(--max-width);
   margin: 0 auto;
   min-height: 400px;
+  width: 100%;
 }
 
 .layout {

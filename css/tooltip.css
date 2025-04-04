@@ -1,0 +1,40 @@
+#tooltip {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: var(--white-color);
+  padding: 6px 12px;
+  border-radius: var(--border-radius-small);
+  font-size: 0.85rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.side-tooltip {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  padding: 8px 12px;
+  font-size: var(--font-small-size);
+  border-radius: var(--border-radius-small);
+  min-width: 180px;
+  max-width: 240px;
+  height: fit-content;
+  pointer-events: none;
+}
+
+.mini_tooltip {
+  background-color: var(--header-color);
+  color: var(--black-color);
+  padding: 6px 12px;
+  border-radius: var(--border-radius-small);
+  border: 1px solid var(--dark-green-color);
+  pointer-events: none;
+}
+
+
+/* Optional: Add transition for circle hover */
+circle {
+  transition: r 0.15s, stroke-width 0.15s;
+}

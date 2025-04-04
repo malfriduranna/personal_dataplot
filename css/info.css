@@ -3,10 +3,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.info h1, .overview h1 {
-  font-size: var(--font-large-size);
+  width: 100%;
 }
 
 .info_text {
