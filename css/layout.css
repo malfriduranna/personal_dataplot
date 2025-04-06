@@ -27,16 +27,19 @@
   margin-top: calc(var(--spacing) * 2);
 }
 
-.chart-container {
-  padding: 1rem 1.5rem;
-  border-radius: var(--border-radius-small);
-  box-shadow: var(--box-shadow);
-  flex: 1 1 300px; /* Grow, shrink, basis */
-  min-width: 300px;
+.row {
+  margin-top: var(--spacing);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  width: 100%;
 }
 
-.chart-container svg {
-  display: block; /* Prevent extra space below SVG */
-  width: 100%; /* Responsive width */
-  height: auto;
+.full_width {
+  flex: 1 1 100%;
+}
+
+#songDistChart {
+  min-height: 350px;
+  overflow: auto;
 }

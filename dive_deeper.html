@@ -13,32 +13,7 @@
     <link rel="stylesheet" href="css/charts.css" />
     <link rel="stylesheet" href="css/box.css" />
     <link rel="stylesheet" href="css/search-engine.css" />
-    <!-- Inline CSS for layout -->
-    <style>
-      .row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-      }
-      .chart_container {
-        flex: 1 1 45%;
-        min-width: 300px;
-        background: #fff;
-        padding: 10px;
-        border: 1px solid #ddd;
-        box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
-        overflow: hidden; /* keep content within container */
-      }
-      .full_width {
-        flex: 1 1 100%;
-      }
-      #songDistChart {
-        /* Optional fixed height for detail panel */
-        min-height: 350px;
-        overflow: auto;
-      }
-      /* You can add further CSS here */
-    </style>
+    <link rel="stylesheet" href="css/controls.css" />
   </head>
   <body>
     <div class="layout">
@@ -56,6 +31,7 @@
       </header>
 
       <main class="main">
+        <!-- Section Title -->
         <section class="info">
           <h1>Dive Deeper into your Artist</h1>
         </section>
@@ -72,20 +48,34 @@
           <button id="artistSearchBtn" class="button">Search Artist</button>
         </section>
 
-        <!-- Artist Info -->
+        <!-- General Artist Info -->
         <div id="artistInfo" class="info_panel full_width"></div>
 
-        <!-- Row 1: Scatter Plot & Total Minutes per Year -->
-        <div class="row">
-          <div id="scatterChart" class="chart_container">
-            <h2>Track Listening Scatter Plot</h2>
+        <!-- Time Frame Controls -->
+        <div class="controls">
+          <div>
+            <label for="yearSelect">Quick Select Year:</label>
+            <select id="yearSelect"></select>
           </div>
-          <div id="barChart" class="chart_container">
-            <h2>Total Minutes per Year</h2>
+          <div>|</div>
+          <div>
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" />
           </div>
+          <div>
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" />
+          </div>
+          <button id="applyRangeBtn">Apply Range</button>
         </div>
 
-        <!-- Row 2: Sunburst Chart & Song Distribution -->
+        <!-- Peak Listening Section Placeholder -->
+        <div id="peakListening" class="info_panel full_width">
+          <h2>When You Listen to This Artist the Most</h2>
+          <p>Coming soon: Data visualization showing peak listening times.</p>
+        </div>
+
+        <!-- Row: Sunburst & Song Distribution -->
         <div class="row">
           <div id="sunburstChart" class="chart_container">
             <h2>Album vs. Single Listening (Sunburst Chart)</h2>
@@ -96,15 +86,14 @@
           </div>
         </div>
 
-        <!-- Row 3: Album Scatter Plot & Mood Sankey -->
+        <!-- Row: Scatter Plot & Mood Sankey -->
         <div class="row">
-          <div class="full_width sankey_container">
-            <div id="moodSankey" class="chart_container">
-              <h2>Mood & Behavior Sankey</h2>
-            </div>
-            <div id="moodSankeyLegend" class="legend_panel"></div>
+          <div id="scatterChart" class="chart_container">
+            <h2>Track Listening Scatter Plot</h2>
           </div>
-          <div id="moodInfo" class="info_panel full_width"></div>
+          <div id="moodSankey" class="chart_container">
+            <h2>Mood & Behavior Sankey</h2>
+          </div>
         </div>
       </main>
 
@@ -120,6 +109,9 @@
         <p class="footer_text">© 2025 YourSiteName</p>
       </footer>
     </div>
+
+    <!-- Tooltip container for sunburst -->
+    <div id="sunburstTooltip" style="position: absolute; opacity: 0; pointer-events: none; background: #fff; padding: 5px; border: 1px solid #ddd;"></div>
 
     <script src="scripts/deepDive.js" type="module" defer></script>
   </body>
