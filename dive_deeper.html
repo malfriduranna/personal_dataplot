@@ -4,16 +4,41 @@
     <meta charset="utf-8" />
     <title>Spotify Listening</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Include d3-sankey if using the sankey diagram -->
+    <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="css/header.css" />
     <link rel="stylesheet" href="css/footer.css" />
     <link rel="stylesheet" href="css/layout.css" />
-    <link rel="stylesheet" href="css/info.css" />
-    <link rel="stylesheet" href="css/search-engine.css" />
-    <link rel="stylesheet" href="css/sunburts.css" />
-    <link rel="stylesheet" href="css/tooltip.css" />
     <link rel="stylesheet" href="css/charts.css" />
-    <!-- Include additional CSS files as needed -->
+    <link rel="stylesheet" href="css/box.css" />
+    <link rel="stylesheet" href="css/search-engine.css" />
+    <!-- Inline CSS for layout -->
+    <style>
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      .chart_container {
+        flex: 1 1 45%;
+        min-width: 300px;
+        background: #fff;
+        padding: 10px;
+        border: 1px solid #ddd;
+        box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden; /* keep content within container */
+      }
+      .full_width {
+        flex: 1 1 100%;
+      }
+      #songDistChart {
+        /* Optional fixed height for detail panel */
+        min-height: 350px;
+        overflow: auto;
+      }
+      /* You can add further CSS here */
+    </style>
   </head>
   <body>
     <div class="layout">
@@ -47,24 +72,40 @@
           <button id="artistSearchBtn" class="button">Search Artist</button>
         </section>
 
-        <section class="chart_insights">
-          <div class="chart_container">
-            <div class="chart_tooltip_wrapper">
-              <h2>Albums Breakdown</h2>
-              <div class="sunburst_container">
-                <div id="sunburstChart"></div>
-                <div id="tooltip_sunburst" ></div>
-              </div>
-            </div>
-            <div class="insight_box">
-              <h3>Your Insights</h3>
-              <div id="insightContent"></div>
-            </div>
-          </div>
+        <!-- Artist Info -->
+        <div id="artistInfo" class="info_panel full_width"></div>
 
-          <div id="albumDetails" class="album_detai_box">
+        <!-- Row 1: Scatter Plot & Total Minutes per Year -->
+        <div class="row">
+          <div id="scatterChart" class="chart_container">
+            <h2>Track Listening Scatter Plot</h2>
           </div>
-        </section>
+          <div id="barChart" class="chart_container">
+            <h2>Total Minutes per Year</h2>
+          </div>
+        </div>
+
+        <!-- Row 2: Sunburst Chart & Song Distribution -->
+        <div class="row">
+          <div id="sunburstChart" class="chart_container">
+            <h2>Album vs. Single Listening (Sunburst Chart)</h2>
+          </div>
+          <div id="songDistChart" class="chart_container">
+            <h2>Song Distribution</h2>
+            <!-- This panel will be updated on drill–down -->
+          </div>
+        </div>
+
+        <!-- Row 3: Album Scatter Plot & Mood Sankey -->
+        <div class="row">
+          <div class="full_width sankey_container">
+            <div id="moodSankey" class="chart_container">
+              <h2>Mood & Behavior Sankey</h2>
+            </div>
+            <div id="moodSankeyLegend" class="legend_panel"></div>
+          </div>
+          <div id="moodInfo" class="info_panel full_width"></div>
+        </div>
       </main>
 
       <footer class="footer">
@@ -80,7 +121,6 @@
       </footer>
     </div>
 
-    <!-- Fetch the external JavaScript for the sunburst plot -->
-    <script src="scripts/spotifySunburst.js" type="module" defer></script>
+    <script src="scripts/deepDive.js" type="module" defer></script>
   </body>
 </html>
