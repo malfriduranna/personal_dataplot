@@ -11,20 +11,13 @@ let currentArtistName = "";
 
 /***********************
  * Update Time Controls for the Selected Artist
- * Initializes the start/end date inputs to span from the first listen to the most recent.
  ***********************/
-/***********************
- * Update Time Controls for the Selected Artist
- * Initializes the start/end date inputs to span from the first listen to the most recent,
- * and populates the Quick Select Year dropdown.
- ***********************/
-function updateTimeControls(artistData) {
+function updateTimeControls(artistData, artistName) {
   const dates = artistData.map((d) => new Date(d.ts));
   const minDate = new Date(Math.min.apply(null, dates));
   const maxDate = new Date(Math.max.apply(null, dates));
   const formatDate = (d) => d.toISOString().split("T")[0];
 
-  // Update start and end date inputs with full range.
   const startDateInput = document.getElementById("startDate");
   const endDateInput = document.getElementById("endDate");
   startDateInput.value = formatDate(minDate);
@@ -34,22 +27,19 @@ function updateTimeControls(artistData) {
   endDateInput.min = formatDate(minDate);
   endDateInput.max = formatDate(maxDate);
 
-  // Populate Quick Select Year dropdown.
   const yearSelect = document.getElementById("yearSelect");
-  yearSelect.innerHTML = ""; // Clear existing options
+  yearSelect.innerHTML = "";
 
   // Get unique years from the artist data.
   const uniqueYears = Array.from(
     new Set(artistData.map((d) => new Date(d.ts).getFullYear()))
   ).sort((a, b) => a - b);
 
-  // Add a default "All Years" option.
   const defaultOption = document.createElement("option");
   defaultOption.value = "";
   defaultOption.text = "All Years";
   yearSelect.appendChild(defaultOption);
 
-  // Add an option for each unique year.
   uniqueYears.forEach((year) => {
     const option = document.createElement("option");
     option.value = year;
@@ -61,39 +51,230 @@ function updateTimeControls(artistData) {
   yearSelect.addEventListener("change", function () {
     const selectedYear = parseInt(this.value);
     if (!isNaN(selectedYear)) {
-      // Set the range to the start and end of the selected year.
       const yearStart = new Date(selectedYear, 0, 1);
       const yearEnd = new Date(selectedYear, 11, 31);
       startDateInput.value = formatDate(yearStart);
       endDateInput.value = formatDate(yearEnd);
     } else {
-      // Reset to full range if "All Years" is selected.
       startDateInput.value = formatDate(minDate);
       endDateInput.value = formatDate(maxDate);
     }
   });
+
+  // Attach a reset event listener to the "Reset Controls" button.
+  const resetButton = document.getElementById("resetRangeBtn");
+  if (resetButton) {
+    resetButton.addEventListener("click", function () {
+      yearSelect.value = "";
+      startDateInput.value = formatDate(minDate);
+      endDateInput.value = formatDate(maxDate);
+
+      const filteredData = window.allParsedData.filter((d) => {
+        const date = new Date(d.ts);
+        return date >= minDate && date <= maxDate;
+      });
+      updateAllCharts(filteredData, artistName);
+    });
+  } else {
+    console.error("Reset Range button not found in the DOM");
+  }
 }
 
 /***********************
- * Drill-Down: Song Distribution as a Radar Chart (by Year, Album, or Both)
+ * Linegraph of peak listenings
+ ***********************/
+function updatePeakListening(data, artistName) {
+  // Filter data for the artist
+  const artistData = data.filter(
+    (d) =>
+      d.master_metadata_album_artist_name &&
+      d.master_metadata_album_artist_name.toLowerCase() ===
+        artistName.toLowerCase()
+  );
+
+  // Remove any existing chart
+  const container = d3.select("#peakListening");
+  container.selectAll("svg").remove();
+
+  if (!artistData.length) {
+    container.selectAll("p.peak-message").remove();
+    container
+      .append("p")
+      .attr("class", "peak-message")
+      .text("No listening data available for this artist.");
+    return;
+  } else {
+    container.selectAll("p.peak-message").remove();
+  }
+
+  // Determine date range
+  const parseDate = (d) => new Date(d.ts);
+  const dates = artistData.map(parseDate);
+  const minDate = new Date(Math.min(...dates));
+  const maxDate = new Date(Math.max(...dates));
+  const diffDays = (maxDate - minDate) / (1000 * 3600 * 24);
+
+  // Decide on grouping strategy based on diffDays
+  let groupFn, xFormat;
+  if (diffDays < 7) {
+    // 1) No grouping (one point per record)
+    // We basically treat each record as its own x-value
+    // so we can see day-to-day (or minute-to-minute) changes
+    // if your data is that granular.
+    groupFn = (d) => parseDate(d); // no grouping
+    xFormat = d3.timeFormat("%b %d, %H:%M"); // e.g. "May 02, 13:45"
+  } else if (diffDays <= 60) {
+    // 2) Group by day
+    groupFn = (d) => d3.timeDay(parseDate(d));
+    xFormat = d3.timeFormat("%b %d"); // e.g. "May 02"
+  } else {
+    // 3) Group by week
+    groupFn = (d) => d3.timeWeek(parseDate(d));
+    xFormat = d3.timeFormat("%b %d"); // e.g. "May 02"
+  }
+
+  // Aggregate data by chosen grouping
+  const grouped = d3.rollups(
+    artistData,
+    (v) => d3.sum(v, (d) => +d.ms_played / 60000),
+    groupFn
+  );
+
+  // Sort groups by date
+  grouped.sort((a, b) => a[0] - b[0]);
+
+  // If we did "no grouping," we effectively have one data point per record.
+  // If we grouped by day or week, we have sums for that day/week.
+
+  // Dimensions
+  const margin = { top: 20, right: 30, bottom: 70, left: 50 },
+    width = 800 - margin.left - margin.right,
+    height = 300 - margin.top - margin.bottom;
+
+  const svg = container
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  // Create scales
+  const xScale = d3
+    .scaleTime()
+    .domain(d3.extent(grouped, (d) => d[0]))
+    .range([0, width]);
+
+  const yScale = d3
+    .scaleLinear()
+    .domain([0, d3.max(grouped, (d) => d[1])])
+    .nice()
+    .range([height, 0]);
+
+  // Define line generator
+  const line = d3
+    .line()
+    .x((d) => xScale(d[0]))
+    .y((d) => yScale(d[1]))
+    .curve(d3.curveLinear);
+
+  // Append axes
+  svg
+    .append("g")
+    .attr("transform", `translate(0,${height})`)
+    .call(d3.axisBottom(xScale).ticks(6).tickFormat(xFormat))
+    .append("text")
+    .attr("fill", "#000")
+    .attr("x", width / 2)
+    .attr("y", 40)
+    .attr("text-anchor", "middle")
+    .text("Time");
+
+  svg
+    .append("g")
+    .call(d3.axisLeft(yScale))
+    .append("text")
+    .attr("fill", "#000")
+    .attr("transform", "rotate(-90)")
+    .attr("y", -40)
+    .attr("x", -height / 2)
+    .attr("text-anchor", "middle")
+    .text("Minutes Played");
+
+  // Draw the line
+  svg
+    .append("path")
+    .datum(grouped)
+    .attr("fill", "none")
+    .attr("stroke", "#4caf4f")
+    .attr("stroke-width", 2)
+    .attr("d", line);
+
+  // Remove the code that adds circles for data points.
+  // (If you need tooltips, consider using mouse events on the line itself.)
+
+  // Add the brush.
+  const brush = d3
+    .brushX()
+    .extent([
+      [0, 0],
+      [width, height],
+    ])
+    .on("end", brushed);
+
+  svg.append("g").attr("class", "brush").call(brush);
+
+  // Brush event handler.
+  function brushed({ selection }) {
+    if (!selection) return; // Ignore if no selection.
+    const [x0, x1] = selection;
+    const date0 = xScale.invert(x0);
+    const date1 = xScale.invert(x1);
+    // Update the date range controls (assumes they exist in your DOM).
+    document.getElementById("startDate").value = date0
+      .toISOString()
+      .split("T")[0];
+    document.getElementById("endDate").value = date1
+      .toISOString()
+      .split("T")[0];
+    // Optionally, you can trigger an update of all charts using the new date range.
+    //For example:
+    const filteredData = window.allParsedData.filter((d) => {
+      const date = new Date(d.ts);
+      return date >= date0 && date <= date1;
+    });
+    updateAllCharts(filteredData, artistName);
+
+    // Clear the brush selection.
+    d3.select(this).call(brush.move, null);
+  }
+}
+
+/***********************
+ * Drill-Down: Song Distribution as a Radar Chart
  ***********************/
 function updateSongDistribution(artistData) {
-  // Helper function to wrap text into multiple tspans.
   function wrapText(textSelection, maxWidth, maxLines = 3) {
     textSelection.each(function () {
       const text = d3.select(this);
       const words = text.text().split(/\s+/);
-      text.text(null); // Clear the original text.
+      text.text(null);
       let line = [];
       let lineNumber = 0;
-      const lineHeight = 1.1; // ems for line spacing.
-      const x = text.attr("x");
-      const y = text.attr("y");
+      const lineHeight = 1.1; // ems
+      // Get x and y attributes, defaulting to 0 if not set.
+      const x = text.attr("x") || 0;
+      const y = text.attr("y") || 0;
+      // Optionally, get an initial dy value (or use 0)
+      let dy = parseFloat(text.attr("dy")) || 0;
+
+      // Append the first tspan using x, y and initial dy.
       let tspan = text
         .append("tspan")
         .attr("x", x)
         .attr("y", y)
-        .attr("dy", "0em");
+        .attr("dy", dy + "em")
+        .text("");
+
       for (let i = 0; i < words.length; i++) {
         line.push(words[i]);
         tspan.text(line.join(" "));
@@ -101,19 +282,21 @@ function updateSongDistribution(artistData) {
           tspan.node().getComputedTextLength() > maxWidth &&
           line.length > 1
         ) {
-          line.pop(); // remove last word
+          line.pop();
           tspan.text(line.join(" "));
-          line = [words[i]]; // start new line with the word that didn't fit
+          // Start a new line with the current word.
+          line = [words[i]];
           lineNumber++;
           if (lineNumber >= maxLines) {
-            // If maximum lines reached, append an ellipsis and exit.
+            // Append an ellipsis if maximum lines reached.
             tspan.text(tspan.text() + " …");
             break;
           }
+          // Append a new tspan for the next line.
+          // Notice we do not set 'y' here—only a relative 'dy' to move it down.
           tspan = text
             .append("tspan")
             .attr("x", x)
-            .attr("y", y)
             .attr("dy", lineHeight + "em")
             .text(words[i]);
         }
@@ -121,14 +304,13 @@ function updateSongDistribution(artistData) {
     });
   }
 
-  // Filter data based on drillDownState.
   let filtered = artistData;
-  let headerText = "Song Distribution";
+  let headerText = "Showing ";
   if (drillDownState.selectedYear) {
     filtered = filtered.filter(
       (d) => new Date(d.ts).getFullYear() === drillDownState.selectedYear
     );
-    headerText += ` for Year: ${drillDownState.selectedYear}`;
+    headerText += `data for Year: ${drillDownState.selectedYear}`;
   }
   if (drillDownState.selectedAlbum) {
     filtered = filtered.filter(
@@ -138,14 +320,20 @@ function updateSongDistribution(artistData) {
     );
     headerText += drillDownState.selectedYear
       ? ` & Album: ${drillDownState.selectedAlbum}`
-      : ` for Album: ${drillDownState.selectedAlbum}`;
+      : `data for Album: ${drillDownState.selectedAlbum}`;
   }
+
   if (filtered.length === 0) {
-    d3.select("#songDistChart").html(
-      "<p class='empty-message'>No song data for the selected criteria.</p>"
-    );
+    // Remove everything below the h2 without wiping the header
+    const chartContainer = d3.select("#songDistChart");
+    chartContainer.selectAll(":not(h2)").remove();
+    chartContainer
+      .append("p")
+      .attr("class", "empty-message")
+      .text("No song data for the selected criteria.");
     return;
   }
+
   const songData = d3
     .rollups(
       filtered,
@@ -154,39 +342,54 @@ function updateSongDistribution(artistData) {
     )
     .map(([track, minutes]) => ({ track, minutes }));
 
-  // Clear previous content.
-  d3.select("#songDistChart").html("");
+  // Select the chart container and remove everything below the h2
+  const chartContainer = d3.select("#songDistChart");
+  chartContainer.selectAll(":not(h2)").remove();
 
-  // Add a Reset Drill Down button.
-  const resetButton = document.createElement("button");
-  resetButton.textContent = "Reset Drill Down";
-  resetButton.addEventListener("click", () => {
-    // Reset drill-down state.
-    drillDownState.selectedYear = null;
-    drillDownState.selectedAlbum = null;
-    d3.select("#songDistChart").html("<h2>Song Distribution</h2>");
-    // Refresh the sunburst chart back to full state.
-    updateSunburstChart(window.allParsedData, currentArtistName);
-  });
-  document.getElementById("songDistChart").appendChild(resetButton);
+  // Append a container for the info (p and reset button)
+  const infoDiv = chartContainer
+    .append("div")
+    .attr("class", "infoDiv")
+    .style("display", "flex")
+    .style("justify-content", "space-between")
+    .style("align-items", "center")
+    .style("margin-bottom", "10px");
 
-  // Insert header.
-  d3.select("#songDistChart").insert("h3", ":first-child").text(headerText);
+  // Append the info paragraph below the h2
+  infoDiv
+    .append("p")
+    .attr("id", "songDistInfo")
+    .style("margin", "0")
+    .text(headerText);
 
-  // Radar chart configuration.
-  // We want the overall SVG to be exactly 400x400.
+  // Append the reset button with class 'button'
+  infoDiv
+    .append("button")
+    .attr("class", "button")
+    .attr("id", "resetButton")
+    .style("cursor", "pointer")
+    .text("X")
+    .on("click", () => {
+      drillDownState.selectedYear = null;
+      drillDownState.selectedAlbum = null;
+      // Remove everything below the h2 while keeping the header intact
+      chartContainer.selectAll(":not(h2)").remove();
+      updateSunburstChart(window.allParsedData, currentArtistName);
+    });
+
+  // Append a container for the radar chart below the infoDiv
+  const chartArea = chartContainer.append("div").attr("class", "chartArea");
+
   const overallSize = 400;
   const margin = { top: 50, right: 50, bottom: 50, left: 50 };
-  const width = overallSize - margin.left - margin.right; // drawing area width
-  const height = overallSize - margin.top - margin.bottom; // drawing area height
+  const width = overallSize - margin.left - margin.right;
+  const height = overallSize - margin.top - margin.bottom;
   const radius = Math.min(width, height) / 2 - 40;
   const numAxes = songData.length;
   const maxValue = d3.max(songData, (d) => d.minutes);
   const angleSlice = (Math.PI * 2) / numAxes;
 
-  // Create SVG container.
-  const svg = d3
-    .select("#songDistChart")
+  const svg = chartArea
     .append("svg")
     .attr("width", overallSize)
     .attr("height", overallSize)
@@ -196,7 +399,6 @@ function updateSongDistribution(artistData) {
       `translate(${width / 2 + margin.left},${height / 2 + margin.top})`
     );
 
-  // Draw circular grid lines.
   const levels = 5;
   for (let level = 1; level <= levels; level++) {
     const rLevel = radius * (level / levels);
@@ -208,7 +410,6 @@ function updateSongDistribution(artistData) {
       .attr("stroke-dasharray", "2,2");
   }
 
-  // Draw axis lines and labels.
   songData.forEach((d, i) => {
     const angle = i * angleSlice - Math.PI / 2;
     const x = radius * Math.cos(angle);
@@ -222,7 +423,6 @@ function updateSongDistribution(artistData) {
       .attr("stroke", "#CDCDCD")
       .attr("stroke-width", 1);
 
-    // Append text for the song title.
     const textEl = svg
       .append("text")
       .attr("x", (radius + 10) * Math.cos(angle))
@@ -232,21 +432,17 @@ function updateSongDistribution(artistData) {
       .style("font-size", "8px")
       .text(d.track);
 
-    // Apply wrapping so that long song titles appear on 2-3 lines.
     wrapText(textEl, 50, 3);
   });
 
-  // Scale for the radar.
   const rScale = d3.scaleLinear().range([0, radius]).domain([0, maxValue]);
 
-  // Create the radar line generator.
   const radarLine = d3
     .lineRadial()
     .radius((d) => rScale(d.minutes))
     .angle((d, i) => i * angleSlice)
     .curve(d3.curveLinearClosed);
 
-  // Draw the radar polygon.
   svg
     .append("path")
     .datum(songData)
@@ -256,7 +452,6 @@ function updateSongDistribution(artistData) {
     .attr("stroke", "#4caf4f")
     .attr("stroke-width", 2);
 
-  // Optionally, add markers at each data point.
   svg
     .selectAll(".radarCircle")
     .data(songData)
@@ -291,11 +486,8 @@ function updateArtistInfo(data, artistName) {
   );
   if (!artistData.length) return;
 
-  // Set the current artist name globally (for time range filtering)
   currentArtistName = artistName;
-
-  // Initialize time controls for this artist
-  updateTimeControls(artistData);
+  updateTimeControls(artistData, artistName);
 
   const totalPlays = artistData.length;
   const totalMinutes = d3.sum(artistData, (d) => +d.ms_played) / 60000;
@@ -318,8 +510,6 @@ function updateArtistInfo(data, artistName) {
     .reduce((a, b) => (a[1] > b[1] ? a : b), [null, 0]);
   const topSong = topSongEntry[0];
   const topSongMinutes = topSongEntry[1];
-
-  // TODO: Consider adding additional information (or a plot) to highlight when you listen to this artist the most.
 
   const overallRankings = d3
     .rollups(
@@ -362,7 +552,6 @@ function updateArtistInfo(data, artistName) {
     }
   });
 
-  // Get Artist Image via oEmbed from top song if available.
   const trackForImg = artistData.find(
     (d) =>
       d.master_metadata_track_name === topSong &&
@@ -386,70 +575,70 @@ function updateArtistInfo(data, artistName) {
 
   function renderArtistInfo() {
     const html = `
-      <div class="artist-info-box transition">
-        <img src="${artistImageUrl}" alt="${artistName}" class="artist-img" />
-        <div class="artist_info_container">
-          <h2>${artistName}</h2>
-          <div class="artists_info_text">
-            <div class="info-left">
-              ${
-                totalPlays
-                  ? `<p><strong>Total Plays:</strong> ${totalPlays}</p>`
-                  : ""
-              }
-              ${
-                totalMinutes
-                  ? `<p><strong>Total Minutes:</strong> ${totalMinutes.toFixed(
-                      1
-                    )}</p>`
-                  : ""
-              }
-              ${
-                firstListenDate
-                  ? `<p><strong>First Listened:</strong> ${firstListenDate.toLocaleDateString()}</p>`
-                  : ""
-              }
-              ${
-                peakYear
-                  ? `<p><strong>Peak Listening Year:</strong> ${peakYear} (${peakMinutes.toFixed(
-                      1
-                    )} minutes)</p>`
-                  : ""
-              }
-              ${
-                topSong
-                  ? `<p><strong>Top Song:</strong> ${topSong} (${topSongMinutes.toFixed(
-                      1
-                    )} minutes)</p>`
-                  : ""
-              }
+            <div class="artist-info-box transition">
+              <img src="${artistImageUrl}" alt="${artistName}" class="artist-img" />
+              <div class="artist_info_container">
+                <h2>${artistName}</h2>
+                <div class="artists_info_text">
+                  <div class="info-left">
+                    ${
+                      totalPlays
+                        ? `<p><strong>Total Plays:</strong> ${totalPlays}</p>`
+                        : ""
+                    }
+                    ${
+                      totalMinutes
+                        ? `<p><strong>Total Minutes:</strong> ${totalMinutes.toFixed(
+                            1
+                          )}</p>`
+                        : ""
+                    }
+                    ${
+                      firstListenDate
+                        ? `<p><strong>First Listened:</strong> ${firstListenDate.toLocaleDateString()}</p>`
+                        : ""
+                    }
+                    ${
+                      peakYear
+                        ? `<p><strong>Peak Listening Year:</strong> ${peakYear} (${peakMinutes.toFixed(
+                            1
+                          )} minutes)</p>`
+                        : ""
+                    }
+                    ${
+                      topSong
+                        ? `<p><strong>Top Song:</strong> ${topSong} (${topSongMinutes.toFixed(
+                            1
+                          )} minutes)</p>`
+                        : ""
+                    }
+                  </div>
+                  <div class="info-right">
+                    ${
+                      overallRank
+                        ? `<p><strong>Overall Rank:</strong> #${overallRank} among all artists</p>`
+                        : ""
+                    }
+                    ${
+                      topYears.length
+                        ? `<p><strong>Top 5 Years:</strong></p>
+                           <ul>
+                            ${topYears
+                              .map(
+                                (d) =>
+                                  `<li>${d.year}: Ranked #${
+                                    d.rank
+                                  } (${d.totalMinutes.toFixed(1)} minutes)</li>`
+                              )
+                              .join("")}
+                          </ul>`
+                        : ""
+                    }
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="info-right">
-              ${
-                overallRank
-                  ? `<p><strong>Overall Rank:</strong> #${overallRank} among all artists</p>`
-                  : ""
-              }
-              ${
-                topYears.length
-                  ? `<p><strong>Top 5 Years:</strong></p>
-                     <ul>
-                      ${topYears
-                        .map(
-                          (d) =>
-                            `<li>${d.year}: Ranked #${
-                              d.rank
-                            } (${d.totalMinutes.toFixed(1)} minutes)</li>`
-                        )
-                        .join("")}
-                    </ul>`
-                  : ""
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+          `;
     d3.select("#artistInfo")
       .html("")
       .style("opacity", 0)
@@ -528,7 +717,6 @@ function updateBarChart(data, artistName) {
     .attr("text-anchor", "middle")
     .text("Total Minutes Played");
 
-  // When a bar is clicked, set the selected year and update song distribution.
   const bars = svg
     .selectAll("rect")
     .data(yearData)
@@ -702,10 +890,8 @@ function updateSunburstChart(data, artistName) {
     .endAngle((d) => d.x1)
     .innerRadius((d) => d.y0)
     .outerRadius((d) => d.y1);
-  // Use a new color palette (schemeSet2)
   const color = d3.scaleOrdinal(d3.schemeSet2);
 
-  // Create paths for all nodes.
   const paths = svg
     .selectAll("path")
     .data(root.descendants().filter((d) => d.depth))
@@ -747,17 +933,11 @@ function updateSunburstChart(data, artistName) {
     })
     .on("click", function (event, d) {
       if (d.depth === 1) {
-        // Set the selected album.
         drillDownState.selectedAlbum = d.data.name;
-
-        // Transition all paths so that:
-        // - Nodes within the selected album branch (album and its children) keep their original colors.
-        // - All other nodes become a pale white.
         paths
           .transition()
           .duration(200)
           .attr("fill", function (p) {
-            // Check if p is within the selected album branch:
             if (
               p
                 .ancestors()
@@ -770,7 +950,7 @@ function updateSunburstChart(data, artistName) {
               let albumNode = p.ancestors().find((a) => a.depth === 1);
               return color(albumNode.data.name);
             }
-            return "#f5f5f5"; // light white for non-selected branches
+            return "#f5f5f5";
           })
           .attr("stroke", function (p) {
             if (p.depth === 1 && p.data.name === drillDownState.selectedAlbum) {
@@ -785,7 +965,6 @@ function updateSunburstChart(data, artistName) {
             return 1;
           });
 
-        // Also update the song distribution chart based on the selected album.
         updateSongDistribution(artistData);
       }
     });
@@ -924,22 +1103,22 @@ function updateMoodSankey(data, artistName) {
     .attr("x", (d) => d.x1 + 6)
     .attr("text-anchor", "start");
   d3.select("#moodInfo").html(`
-    <h3>Mood & Behavior Info</h3>
-    <p>Each node represents a reason why you started or ended a song.
-       The links show the frequency of transitions between these reasons.</p>
-    <p>The biggest combo is <strong>${maxCombo.value} plays</strong> from 
-       <strong>${
-         sankeyNodes[maxCombo.source]
-           ? sankeyNodes[maxCombo.source].name
-           : "N/A"
-       }</strong>
-       to <strong>${
-         sankeyNodes[maxCombo.target]
-           ? sankeyNodes[maxCombo.target].name
-           : "N/A"
-       }</strong>.
-    </p>
-  `);
+          <h3>Mood & Behavior Info</h3>
+          <p>Each node represents a reason why you started or ended a song.
+             The links show the frequency of transitions between these reasons.</p>
+          <p>The biggest combo is <strong>${maxCombo.value} plays</strong> from 
+             <strong>${
+               sankeyNodes[maxCombo.source]
+                 ? sankeyNodes[maxCombo.source].name
+                 : "N/A"
+             }</strong>
+             to <strong>${
+               sankeyNodes[maxCombo.target]
+                 ? sankeyNodes[maxCombo.target].name
+                 : "N/A"
+             }</strong>.
+          </p>
+        `);
   d3.select("#moodSankeyLegend").html("");
   const legend = d3
     .select("#moodSankeyLegend")
@@ -958,12 +1137,12 @@ function updateMoodSankey(data, artistName) {
     .style("margin-bottom", "5px")
     .html((d) => {
       const colorBox = `<span style="
-          display:inline-block;
-          width:14px;
-          height:14px;
-          background:${color(d)};
-          margin-right:5px;
-        "></span>`;
+                display:inline-block;
+                width:14px;
+                height:14px;
+                background:${color(d)};
+                margin-right:5px;
+              "></span>`;
       const explanation = reasonExplanations[d] || d;
       return colorBox + `<strong>${d}:</strong> ${explanation}`;
     });
@@ -971,17 +1150,19 @@ function updateMoodSankey(data, artistName) {
 
 /***********************
  * Update All Charts for Selected Artist
- * When called, resets the drill-down state and updates each chart.
- * If called with data filtered by a date range, only that subset is used.
  ***********************/
 function updateAllCharts(data, artistName) {
   // Reset drill down state
   drillDownState.selectedYear = null;
   drillDownState.selectedAlbum = null;
-  updateArtistInfo(window.allParsedData, artistName);
+  const chartContainer = d3.select("#songDistChart");
+  chartContainer.html("");
+  chartContainer.append("h2").text("Song Distribution");
+  // Do not update the artist info here to prevent refreshing the info box
+  updatePeakListening(data, artistName);
   updateScatterPlot(data, artistName);
   updateBarChart(data, artistName);
-  updateSunburstChart(data, artistName); // main album view with drill-down
+  updateSunburstChart(data, artistName);
   updateMoodSankey(data, artistName);
 }
 
@@ -1016,6 +1197,8 @@ function initArtistSearch(data) {
           input.value = artist;
           dropdown.innerHTML = "";
           dropdown.style.display = "none";
+          // Update artist info only on artist selection
+          updateArtistInfo(data, artist);
           updateAllCharts(data, artist);
         });
         dropdown.appendChild(li);
@@ -1030,6 +1213,7 @@ function initArtistSearch(data) {
     if (event.key === "Enter") {
       dropdown.style.display = "none";
       const artist = input.value.trim();
+      updateArtistInfo(data, artist);
       updateAllCharts(data, artist);
     }
   });
@@ -1040,13 +1224,13 @@ function initArtistSearch(data) {
   });
   document.getElementById("artistSearchBtn").addEventListener("click", () => {
     const artist = input.value.trim();
+    updateArtistInfo(data, artist);
     updateAllCharts(data, artist);
   });
 }
 
 /***********************
  * Event Listener for Applying Date Range
- * Filters the full dataset by the selected start and end dates and updates all charts accordingly.
  ***********************/
 document.getElementById("applyRangeBtn").addEventListener("click", () => {
   const startDate = new Date(document.getElementById("startDate").value);
@@ -1077,6 +1261,7 @@ fetch("data/astrid_data.csv")
       (a, b) => b[1] - a[1]
     )[0]?.[0];
     if (mostPlayedArtist) {
+      updateArtistInfo(parsedData, mostPlayedArtist);
       updateAllCharts(parsedData, mostPlayedArtist);
       document.getElementById("artistSearchInput").value = mostPlayedArtist;
     }

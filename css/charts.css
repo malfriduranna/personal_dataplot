@@ -52,8 +52,7 @@
   border-radius: var(--border-radius-small);
   border: 1px solid #ddd;
   box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
-  /* flex: 1 1 300px; */
-  width: 45%;
+  width: 45.5%
 }
 
 .chart_container svg {

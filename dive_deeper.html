@@ -66,13 +66,15 @@
             <label for="endDate">End Date:</label>
             <input type="date" id="endDate" />
           </div>
-          <button id="applyRangeBtn">Apply Range</button>
+          <button id="applyRangeBtn" class="button">Apply Range</button>
+          <button id="resetRangeBtn" class="button">Reset Controls</button>
         </div>
 
         <!-- Peak Listening Section Placeholder -->
-        <div id="peakListening" class="info_panel full_width">
-          <h2>When You Listen to This Artist the Most</h2>
-          <p>Coming soon: Data visualization showing peak listening times.</p>
+        <div class="row">
+          <div id="peakListening" class="chart_container full_width">
+            <h2>When You Listen to This Artist the Most</h2>
+          </div>
         </div>
 
         <!-- Row: Sunburst & Song Distribution -->
@@ -111,7 +113,17 @@
     </div>
 
     <!-- Tooltip container for sunburst -->
-    <div id="sunburstTooltip" style="position: absolute; opacity: 0; pointer-events: none; background: #fff; padding: 5px; border: 1px solid #ddd;"></div>
+    <div
+      id="sunburstTooltip"
+      style="
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        background: #fff;
+        padding: 5px;
+        border: 1px solid #ddd;
+      "
+    ></div>
 
     <script src="scripts/deepDive.js" type="module" defer></script>
   </body>
