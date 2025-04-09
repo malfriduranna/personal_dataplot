@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Dashboard - Enhanced</title>
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Link to the external D3.js library -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="#">Home</a> <!-- Placeholder -->
+            <a href="#" class="active">Dashboard</a> <!-- Placeholder -->
+        </nav>
+    </header>
+
+    <main>
+        <h1>Spotify Listening Dashboard</h1>
+
+        <div class="controls">
+             <div><label for="yearSelect">Quick Select Year:</label><select id="yearSelect"></select></div>
+            <div> | </div>
+            <div><label for="startDate">Start Date:</label><input type="date" id="startDate" /></div>
+            <div><label for="endDate">End Date:</label><input type="date" id="endDate" /></div>
+            <button id="applyRangeBtn">Apply Range</button>
+        </div>
+
+                <!-- ============================ -->
+        <!-- ==== ADD THIS SECTION ==== -->
+        <!-- ============================ -->
+        <div class="filter-status-container">
+            <p>Showing data for range: <strong id="current-filter-info">Loading...</strong></p>
+        </div>
+        <!-- ============================ -->
+        <!-- ==== END ADDED SECTION ==== -->
+        <!-- ============================ -->
+
+
+        <div class="visualization-area">
+            <div id="calendar-container">
+                <h2>Daily Listening</h2>
+                <div id="calendar"></div>
+                <div id="legend"></div>
+            </div>
+            <div id="top-artists-container">
+                <h2>Top 5 Artists</h2>
+                <ul id="topArtists"></ul>
+            </div>
+        </div>
+
+        <!-- Row for additional charts -->
+        <div class="charts-row">
+            <div class="chart-container" id="top-tracks-container">
+                 <h2>Top Tracks</h2>
+                 <div id="top-tracks-chart"></div>
+            </div>
+            <div class="chart-container" id="time-of-day-container">
+                 <h2>Listening by Time of Day</h2>
+                 <div id="time-of-day-chart"></div>
+            </div>
+            <div class="chart-container" id="day-of-week-container">
+                 <h2>Listening by Day of Week</h2>
+                 <div id="day-of-week-chart"></div>
+            </div>
+             <!-- <div class="chart-container" id="genre-container">
+                 <h2>Genre Breakdown</h2>
+                 <div id="genre-chart"></div>
+            </div> -->
+        </div>
+
+
+        <!-- Tooltip Div -->
+        <div id="tooltip"></div>
+
+        <div class="chart-container">
+            <h2>Listening Timeline (Last 24 Hours)</h2>
+            <div id="timeline-chart"></div>
+            <p class="chart-description">Each block represents a single listening event. Length is duration, color is platform. Thick border indicates skipped.</p>
+        </div>
+        <div class="chart-container">
+            <h2>Content Type River (Last 7 Days)</h2>
+            <div id="streamgraph-chart"></div>
+             <p class="chart-description">Shows the volume of listening time by content type over the past week.</p>
+        </div>
+        <div class="chart-container">
+            <h2>Top Artist Play Flow (Overall)</h2>
+            <div id="sankey-chart"></div>
+             <p class="chart-description">Shows common transitions between the top 10 most played artists.</p>
+        </div>
+        
+        <!-- Tooltip div (reuse if you have one) -->
+        <div id="tooltip" style="position: absolute; opacity: 0; /* other styles */"></div>
+
+    </main>
+
+    <!-- Link to the external JavaScript file (defer ensures HTML is parsed first) -->
+    <script src="scripts/spotifyDashboard.js" type="module" defer></script>
+</body>
+</html>
