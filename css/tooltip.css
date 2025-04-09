@@ -38,3 +38,12 @@
 circle {
   transition: r 0.15s, stroke-width 0.15s;
 }
+
+.sunburst_tooltip {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--white-color);
+  padding: 5px;
+  border: 1px solid var(--header-color);
+}
