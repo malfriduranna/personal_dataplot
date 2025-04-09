@@ -293,6 +293,14 @@ function updatePeakListening(data, artistName) {
  * Drill-Down: Song Distribution as a Radar Chart
  ***********************/
 function updateSongDistribution(artistData) {
+  const placeholder = d3.select("#albumPlaceholder");
+
+  // Hide placeholder if album is selected
+  if (drillDownState.selectedAlbum) {
+    placeholder.style("display", "none");
+  } else {
+    placeholder.style("display", "block");
+  }
   function wrapText(textSelection, maxWidth, maxLines = 3) {
     textSelection.each(function () {
       const text = d3.select(this);
@@ -403,6 +411,16 @@ function updateSongDistribution(artistData) {
       drillDownState.selectedYear = null;
       drillDownState.selectedAlbum = null;
       chartContainer.selectAll(":not(h2)").remove();
+
+      chartContainer
+        .append("p")
+        .attr("id", "albumPlaceholder")
+        .style("text-align", "center")
+        .style("font-style", "italic")
+        .style("color", "#555")
+        .style("margin-bottom", "10px")
+        .text("Select an album to see more details");
+
       updateSunburstChart(window.allParsedData, currentArtistName);
     });
 
@@ -1046,7 +1064,7 @@ function updateSunburstChart(data, artistName) {
   );
 
   const chartContainer = d3.select("#sunburstChart");
-  chartContainer.selectAll("*:not(h2)").remove(); // Keep the heading
+  chartContainer.selectAll("*:not(h2)").remove();
 
   if (!artistData.length) {
     chartContainer
@@ -1056,19 +1074,11 @@ function updateSunburstChart(data, artistName) {
     return;
   }
 
-  // ===== Album & Single Stats =====
   const albums = d3.groups(
     artistData,
     (d) => d.master_metadata_album_album_name
   );
-  const totalAlbums = albums.length;
-  const singleAlbums = albums.filter(([albumName, records]) => {
-    const trackNames = Array.from(
-      new Set(records.map((d) => d.master_metadata_track_name.toLowerCase()))
-    );
-    return trackNames.length === 1 && trackNames[0] === albumName.toLowerCase();
-  }).length;
-  // Compute total listening minutes per album
+
   const albumMinutes = albums.map(([albumName, records]) => ({
     album: albumName,
     minutes: d3.sum(records, (d) => +d.ms_played / 60000),
@@ -1080,49 +1090,46 @@ function updateSunburstChart(data, artistName) {
     ).size,
   }));
 
-  // Sort to find the most listened album
   albumMinutes.sort((a, b) => b.minutes - a.minutes);
   const topAlbum = albumMinutes[0];
-
-  // Find album with most distinct tracks played
   const albumWithMostTracks = albumMinutes.reduce(
     (max, current) =>
       current.tracks.length > max.tracks.length ? current : max,
     albumMinutes[0]
   );
-
-  // Find album you returned to over most days
   const mostConsistentAlbum = albumMinutes.reduce(
     (max, current) => (current.daysListened > max.daysListened ? current : max),
     albumMinutes[0]
   );
 
   chartContainer
-    .insert("div", "svg") // insert before SVG
+    .insert("div", "svg")
     .attr("class", "info_box")
-    .style("margin-bottom", "var(--spacing)")
-    .style("margin-top", "var(--spacing)")
+    .style("margin", "var(--spacing) 0")
     .style("background", "rgba(76, 175, 79, 0.1)")
     .style("padding", "var(--spacing)")
     .style("font-size", "var(--font-small-size)")
     .style("border", "1px solid #ddd")
     .style("border-radius", "var(--border-radius-small)").html(`
-      <strong>Albums You’ve Explored:</strong><br>
-      You’ve listened to <strong>${totalAlbums}</strong> albums from <strong>${artistName}</strong>, and <strong>${singleAlbums}</strong> of them appear to be singles.<br><br>
-      <strong>Top Album:</strong> <em>${
-        topAlbum.album
-      }</em> with <strong>${topAlbum.minutes.toFixed(
+      <p><strong>Albums You’ve Explored:</strong></p>
+      <p>
+        You’ve listened to <strong>${
+          albums.length
+        }</strong> albums from <strong>${artistName}</strong>.<br><br>
+        <strong>Top Album:</strong> <em>${
+          topAlbum.album
+        }</em> with <strong>${topAlbum.minutes.toFixed(
     1
-  )}</strong> total minutes.<br>
-      <strong>Most Tracks Played:</strong> <em>${
+  )}</strong> total minutes.
+      </p>
+      <p><strong>Most Tracks Played:</strong> <em>${
         albumWithMostTracks.album
-      }</em> (${albumWithMostTracks.tracks.length} unique songs).<br>
-      <strong>Most Returned-To:</strong> <em>${
+      }</em> (${albumWithMostTracks.tracks.length} unique songs).</p>
+      <p><strong>Most Returned-To:</strong> <em>${
         mostConsistentAlbum.album
-      }</em> (listened on ${mostConsistentAlbum.daysListened} days).
+      }</em> (listened on ${mostConsistentAlbum.daysListened} days).</p>
     `);
 
-  // ===== Build Sunburst Hierarchy =====
   const hierarchy = {
     name: artistName,
     children: albums.map(([album, records]) => {
@@ -1137,8 +1144,7 @@ function updateSunburstChart(data, artistName) {
     }),
   };
 
-  // ===== Sunburst Chart (Unchanged) =====
-  const width = 300,
+  const width = 350,
     radius = width / 2;
   const partition = d3.partition().size([2 * Math.PI, radius]);
   const root = d3.hierarchy(hierarchy).sum((d) => d.value);
@@ -1158,8 +1164,6 @@ function updateSunburstChart(data, artistName) {
     .innerRadius((d) => d.y0)
     .outerRadius((d) => d.y1);
 
-  const color = d3.scaleOrdinal(d3.schemeSet2);
-
   const paths = svg
     .selectAll("path")
     .data(root.descendants().filter((d) => d.depth))
@@ -1169,7 +1173,14 @@ function updateSunburstChart(data, artistName) {
     .attr("fill", (d) => {
       let current = d;
       while (current.depth > 1) current = current.parent;
-      return color(current.data.name);
+      const albumName = current.data.name;
+
+      if (!albumColorMap.has(albumName)) {
+        const index = hashStringToIndex(albumName, colorScale.range().length);
+        albumColorMap.set(albumName, colorScale(index));
+      }
+
+      return albumColorMap.get(albumName);
     })
     .attr("stroke", "#fff")
     .attr("cursor", "pointer")
@@ -1216,7 +1227,7 @@ function updateSunburstChart(data, artistName) {
                 )
             ) {
               let albumNode = p.ancestors().find((a) => a.depth === 1);
-              return color(albumNode.data.name);
+              return albumColorMap.get(albumNode.data.name);
             }
             return "#f5f5f5";
           })
@@ -1230,7 +1241,6 @@ function updateSunburstChart(data, artistName) {
               ? 4
               : 1
           );
-
         updateSongDistribution(artistData);
       }
     });
@@ -1246,6 +1256,18 @@ function updateSunburstChart(data, artistName) {
         .duration(200)
         .style("opacity", 0)
     );
+}
+
+const albumColorMap = new Map();
+const colorScale = d3.scaleOrdinal(d3.schemeSet2);
+
+function hashStringToIndex(str, range) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0; // Convert to 32bit int
+  }
+  return Math.abs(hash) % range;
 }
 
 /***********************
@@ -1308,14 +1330,36 @@ function updateMoodSankey(data, artistName) {
   const maxCombo = links.reduce((max, d) => (d.value > max.value ? d : max), {
     value: 0,
   });
-  d3.select("#moodSankey").select("svg").remove();
+
+  const container = d3.select("#moodSankey");
+  container.selectAll(".sankey-wrapper").remove();
+
+  const layout = container
+    .append("div")
+    .attr("class", "sankey-wrapper")
+    .style("display", "flex")
+    .style("gap", "20px")
+    .style("justify-content", "space-around")
+    .style("margin-top", "var(--spacing)")
+    .style("margin-bottom", "var(--spacing)");
+
   const width = 400,
     height = 400;
-  const svg = d3
-    .select("#moodSankey")
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height);
+  const svg = layout.append("svg").attr("width", width).attr("height", height);
+
+  const tooltip = container
+    .append("div")
+    .attr("class", "sankey-tooltip")
+    .style("position", "absolute")
+    .style("pointer-events", "none")
+    .style("background", "#fff")
+    .style("border", "1px solid #ccc")
+    .style("padding", "8px")
+    .style("font-size", "var(--font-small-size)")
+    .style("border-radius", "4px")
+    .style("box-shadow", "0 0 6px rgba(0,0,0,0.1)")
+    .style("opacity", 0);
+
   const sankey = d3
     .sankey()
     .nodeWidth(15)
@@ -1324,11 +1368,14 @@ function updateMoodSankey(data, artistName) {
       [1, 1],
       [width - 1, height - 6],
     ]);
+
   const { nodes: sankeyNodes, links: sankeyLinks } = sankey({
     nodes: nodes.map((d) => Object.assign({}, d)),
     links: links.map((d) => Object.assign({}, d)),
   });
+
   const color = d3.scaleOrdinal(d3.schemeCategory10);
+
   const linkSelection = svg
     .append("g")
     .selectAll("path")
@@ -1340,6 +1387,7 @@ function updateMoodSankey(data, artistName) {
     .attr("stroke-width", (d) => Math.max(1, d.width))
     .attr("fill", "none")
     .attr("opacity", 0.5);
+
   const node = svg
     .append("g")
     .selectAll("g")
@@ -1350,10 +1398,27 @@ function updateMoodSankey(data, artistName) {
       linkSelection.attr("opacity", (link) =>
         link.source.name === d.name || link.target.name === d.name ? 1 : 0.1
       );
+
+      tooltip
+        .html(
+          `<strong>${d.name}</strong><br/>${reasonExplanations[d.name] || ""}`
+        )
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY + 10 + "px")
+        .transition()
+        .duration(200)
+        .style("opacity", 1);
+    })
+    .on("mousemove", function (event) {
+      tooltip
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY + 10 + "px");
     })
     .on("mouseout", function () {
       linkSelection.attr("opacity", 0.5);
+      tooltip.transition().duration(200).style("opacity", 0);
     });
+
   node
     .append("rect")
     .attr("x", (d) => d.x0)
@@ -1362,6 +1427,7 @@ function updateMoodSankey(data, artistName) {
     .attr("width", (d) => d.x1 - d.x0)
     .attr("fill", (d) => color(d.name))
     .attr("stroke", "#000");
+
   node
     .append("text")
     .attr("x", (d) => d.x0 - 6)
@@ -1372,50 +1438,65 @@ function updateMoodSankey(data, artistName) {
     .filter((d) => d.x0 < width / 2)
     .attr("x", (d) => d.x1 + 6)
     .attr("text-anchor", "start");
-  d3.select("#moodInfo").html(`
-          <h3>Mood & Behavior Info</h3>
-          <p>Each node represents a reason why you started or ended a song.
-             The links show the frequency of transitions between these reasons.</p>
-          <p>The biggest combo is <strong>${maxCombo.value} plays</strong> from 
-             <strong>${
-               sankeyNodes[maxCombo.source]
-                 ? sankeyNodes[maxCombo.source].name
-                 : "N/A"
-             }</strong>
-             to <strong>${
-               sankeyNodes[maxCombo.target]
-                 ? sankeyNodes[maxCombo.target].name
-                 : "N/A"
-             }</strong>.
-          </p>
-        `);
-  d3.select("#moodSankeyLegend").html("");
-  const legend = d3
-    .select("#moodSankeyLegend")
+
+  // Calculate insights
+  const startCounts = d3.rollup(
+    artistData,
+    (v) => v.length,
+    (d) => d.reason_start
+  );
+  const endCounts = d3.rollup(
+    artistData,
+    (v) => v.length,
+    (d) => d.reason_end
+  );
+  const mostCommonStart = Array.from(startCounts.entries()).sort(
+    (a, b) => b[1] - a[1]
+  )[0];
+  const mostCommonEnd = Array.from(endCounts.entries()).sort(
+    (a, b) => b[1] - a[1]
+  )[0];
+  const totalTransitions = d3.sum(links, (d) => d.value);
+  const getReasonName = (r) => reasonExplanations[r] || r;
+
+  const rightPanel = layout
     .append("div")
-    .attr("class", "legend-container")
-    .style("margin-top", "10px");
-  const legendData = sankeyNodes.map((d) => d.name);
-  legend
-    .selectAll(".legend-item")
-    .data(legendData)
-    .enter()
-    .append("div")
-    .attr("class", "legend-item")
+    .attr("class", "info-panel")
+    .style("width", "50%")
     .style("display", "flex")
-    .style("align-items", "center")
-    .style("margin-bottom", "5px")
-    .html((d) => {
-      const colorBox = `<span style="
-                display:inline-block;
-                width:14px;
-                height:14px;
-                background:${color(d)};
-                margin-right:5px;
-              "></span>`;
-      const explanation = reasonExplanations[d] || d;
-      return colorBox + `<strong>${d}:</strong> ${explanation}`;
-    });
+    .style("flex-direction", "column")
+    .style("gap", "var(--spacing)");
+
+  const infoBox = rightPanel
+    .append("div")
+    .attr("class", "info-box")
+    .style("font-size", "var(--font-small-size)")
+    .style("background", "rgba(76, 175, 79, 0.1)")
+    .style("padding", "var(--spacing)")
+    .style("border", "1px solid #ddd")
+    .style("border-radius", "var(--border-radius-small)");
+
+  console.log("All transitions:", artistData.length);
+  console.log("Filtered Sankey transitions:", links.length);
+  infoBox.html(`
+    <p>This Sankey diagram visualizes how songs begin and end during your sessions with <strong>${artistName}</strong>.</p>
+    <p>Each <strong>node</strong> represents a reason a track was started or stopped, and each <strong>link</strong> shows how frequently transitions occurred between those reasons.</p>
+    <ul>
+      <li><strong>Total transitions recorded:</strong> ${totalTransitions} — this counts how many times songs moved from one reason to another (e.g., play button → track finished)</li>
+      <li><strong>Most common starting reason:</strong> <em>${getReasonName(
+        mostCommonStart[0]
+      )}</em> (${mostCommonStart[1]} times)</li>
+      <li><strong>Most common ending reason:</strong> <em>${getReasonName(
+        mostCommonEnd[0]
+      )}</em> (${mostCommonEnd[1]} times)</li>
+      <li><strong>Most frequent transition:</strong> <em>${getReasonName(
+        sankeyNodes[maxCombo.source]?.name
+      )}</em> → <em>${getReasonName(
+    sankeyNodes[maxCombo.target]?.name
+  )}</em> (${maxCombo.value} plays)</li>
+    </ul>
+    <p>This may reveal listening habits — for example, frequent use of the forward button might indicate skipping, while “trackdone” suggests more passive listening.</p>
+  `);
 }
 
 /***********************
@@ -1428,6 +1509,17 @@ function updateAllCharts(data, artistName) {
   const chartContainer = d3.select("#songDistChart");
   chartContainer.html("");
   chartContainer.append("h2").text("Song Distribution");
+
+  if (chartContainer.select("#albumPlaceholder").empty()) {
+    chartContainer
+      .append("p")
+      .attr("id", "albumPlaceholder")
+      .style("text-align", "center")
+      .style("font-style", "italic")
+      .style("color", "#555")
+      .style("margin-bottom", "10px")
+      .text("Select an album to see more details");
+  }
   // Do not update the artist info here to prevent refreshing the info box
   updatePeakListening(data, artistName);
   updateScatterPlot(data, artistName);
