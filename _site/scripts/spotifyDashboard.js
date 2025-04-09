@@ -441,27 +441,156 @@ function updateTopArtists(data) {
     artistData.forEach(([artist, totalMinutes], index) => { const li = document.createElement("li"); li.innerHTML = `<span class="artist-name">${index + 1}. ${artist}</span> <span class="artist-time">(${formatTime(totalMinutes)})</span>`; targetUl.appendChild(li); });
 }
 
-function updateTopTracksChart(data) {
-    const targetDiv = document.getElementById('top-tracks-chart'); // Use descriptive name
+// function updateTopTracksChart(data) {
+//     const targetDiv = document.getElementById('top-tracks-chart'); // Use descriptive name
+//     if (!targetDiv) return;
+//     targetDiv.innerHTML = "";
+//     if (!requiredColumns.track_name) { targetDiv.innerHTML = `<p class="info-message">'Track Name' column (master_metadata_track_name) missing.</p>`; return; }
+//     if (!data || data.length === 0) { targetDiv.innerHTML = `<p class="empty-message">No data.</p>`; return; }
+//     const trackData = d3.rollups( data.filter(d => d.track && d.track !== "Unknown Track" && d.track !== "N/A" && d.ms_played > 0), v => d3.sum(v, d => d.ms_played / 60000), d => `${d.track} • ${d.artist}`).sort((a, b) => d3.descending(a[1], b[1])).slice(0, 15);
+//     if (trackData.length === 0) { targetDiv.innerHTML = `<p class="empty-message">No track data in this period.</p>`; return; }
+//     const chartHeight = trackData.length * 25 + chartMargin.top + chartMargin.bottom;
+//     const containerWidth = targetDiv.parentElement?.clientWidth || 400;
+//     const chartWidth = containerWidth > 0 ? containerWidth : 400;
+//     const width = chartWidth - chartMargin.left - chartMargin.right;
+//     const height = chartHeight - chartMargin.top - chartMargin.bottom;
+//     if (width <= 0 || height <= 0) { targetDiv.innerHTML = `<p class="error-message">Container too small.</p>`; return; }
+//     const svg = d3.select(targetDiv).append("svg").attr("viewBox", `0 0 ${chartWidth} ${chartHeight}`).attr("preserveAspectRatio", "xMinYMid meet").append("g").attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
+//     const y = d3.scaleBand().range([0, height]).domain(trackData.map(d => d[0])).padding(0.2);
+//     const x = d3.scaleLinear().domain([0, d3.max(trackData, d => d[1]) || 1]).range([0, width]);
+//     svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x).ticks(5).tickFormat(d => formatTime(d))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", chartMargin.bottom - 15).attr("fill", "currentColor").attr("text-anchor", "middle").text("Total Listening Time");
+//     const yAxis = svg.append("g").attr("class", "axis axis--y").call(d3.axisLeft(y).tickSize(0).tickPadding(5)); yAxis.select(".domain").remove(); yAxis.selectAll("text").attr("x", -5);
+//     svg.selectAll(".bar").data(trackData).enter().append("rect").attr("class", "bar").attr("y", d => y(d[0])).attr("height", y.bandwidth()).attr("x", 0).attr("width", 0).attr("fill", "#1DB954").on("mouseover", (event, d) => showTooltip(event, `<b>${d[0]}</b><br>${formatTime(d[1])}`)).on("mousemove", moveTooltip).on("mouseout", hideTooltip).transition().duration(500).attr("width", d => Math.max(0, x(d[1])));
+// }
+
+function updateTopTracksChart(data) { // Renamed function
+    const targetDiv = document.getElementById('top-tracks-chart');
     if (!targetDiv) return;
-    targetDiv.innerHTML = "";
-    if (!requiredColumns.track_name) { targetDiv.innerHTML = `<p class="info-message">'Track Name' column (master_metadata_track_name) missing.</p>`; return; }
-    if (!data || data.length === 0) { targetDiv.innerHTML = `<p class="empty-message">No data.</p>`; return; }
-    const trackData = d3.rollups( data.filter(d => d.track && d.track !== "Unknown Track" && d.track !== "N/A" && d.ms_played > 0), v => d3.sum(v, d => d.ms_played / 60000), d => `${d.track} • ${d.artist}`).sort((a, b) => d3.descending(a[1], b[1])).slice(0, 15);
-    if (trackData.length === 0) { targetDiv.innerHTML = `<p class="empty-message">No track data in this period.</p>`; return; }
-    const chartHeight = trackData.length * 25 + chartMargin.top + chartMargin.bottom;
-    const containerWidth = targetDiv.parentElement?.clientWidth || 400;
-    const chartWidth = containerWidth > 0 ? containerWidth : 400;
-    const width = chartWidth - chartMargin.left - chartMargin.right;
-    const height = chartHeight - chartMargin.top - chartMargin.bottom;
-    if (width <= 0 || height <= 0) { targetDiv.innerHTML = `<p class="error-message">Container too small.</p>`; return; }
-    const svg = d3.select(targetDiv).append("svg").attr("viewBox", `0 0 ${chartWidth} ${chartHeight}`).attr("preserveAspectRatio", "xMinYMid meet").append("g").attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
-    const y = d3.scaleBand().range([0, height]).domain(trackData.map(d => d[0])).padding(0.2);
-    const x = d3.scaleLinear().domain([0, d3.max(trackData, d => d[1]) || 1]).range([0, width]);
-    svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x).ticks(5).tickFormat(d => formatTime(d))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", chartMargin.bottom - 15).attr("fill", "currentColor").attr("text-anchor", "middle").text("Total Listening Time");
-    const yAxis = svg.append("g").attr("class", "axis axis--y").call(d3.axisLeft(y).tickSize(0).tickPadding(5)); yAxis.select(".domain").remove(); yAxis.selectAll("text").attr("x", -5);
-    svg.selectAll(".bar").data(trackData).enter().append("rect").attr("class", "bar").attr("y", d => y(d[0])).attr("height", y.bandwidth()).attr("x", 0).attr("width", 0).attr("fill", "#1DB954").on("mouseover", (event, d) => showTooltip(event, `<b>${d[0]}</b><br>${formatTime(d[1])}`)).on("mousemove", moveTooltip).on("mouseout", hideTooltip).transition().duration(500).attr("width", d => Math.max(0, x(d[1])));
+    targetDiv.innerHTML = ""; // Clear previous content
+    if (!requiredColumns.track_name) { /* ... error handling ... */ return; }
+    if (!data || data.length === 0) { /* ... no data message ... */ return; }
+
+    // Data aggregation (same as before)
+    const trackData = d3.rollups(data.filter(d => d.track && d.track !== "Unknown Track" && d.track !== "N/A" && d.ms_played > 0), v => d3.sum(v, d => d.ms_played / 60000), d => `${d.track} • ${d.artist}`).sort((a, b) => d3.descending(a[1], b[1])).slice(0, 15);
+    if (trackData.length === 0) { /* ... no track data message ... */ return; }
+
+    // --- Create List Structure ---
+    const list = d3.select(targetDiv).append("ol") // Use ordered list for ranking
+        .attr("class", "top-tracks-sparkline-list"); // Add class for styling
+
+    // --- Sparkline Configuration ---
+    const maxMinutes = trackData[0][1]; // Duration of the #1 track
+    const sparklineWidth = 80; // Width of the mini bar chart
+    const sparklineHeight = 12; // Height of the mini bar chart
+    const sparklineScale = d3.scaleLinear()
+        .domain([0, maxMinutes || 1])
+        .range([0, sparklineWidth]);
+
+    // --- Bind Data and Create List Items ---
+    const items = list.selectAll("li")
+        .data(trackData)
+        .join("li");
+
+    // Add Track/Artist Name and Time
+    items.append("span")
+         .attr("class", "track-info")
+         .html(d => `<span class="track-name">${d[0].split('•')[0].trim()}</span> <span class="track-artist">• ${d[0].split('•')[1].trim()}</span>`);
+
+    items.append("span")
+         .attr("class", "track-time")
+         .text(d => `(${formatTime(d[1])})`);
+
+    // Add SVG for Sparkline
+    const sparklineSvg = items.append("svg")
+        .attr("class", "sparkline")
+        .attr("width", sparklineWidth)
+        .attr("height", sparklineHeight)
+        .style("vertical-align", "middle") // Align with text
+        .style("margin-left", "8px");
+
+    // Add Sparkline Bar
+    sparklineSvg.append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", 0) // Start at 0 for animation
+        .attr("height", sparklineHeight)
+        .attr("fill", "#1DB954")
+        .attr("rx", 1) // Slight rounding
+        .attr("ry", 1)
+        .on("mouseover", (event, d) => showTooltip(event, `<b>${d[0]}</b><br>${formatTime(d[1])}`)) // Optional tooltip on bar
+        .on("mousemove", moveTooltip)
+        .on("mouseout", hideTooltip)
+        .transition().duration(500)
+        .attr("width", d => sparklineScale(d[1])); // Animate width
+
+    // --- Optional: Add some basic CSS for the list ---
+    /*
+    .top-tracks-sparkline-list { padding-left: 20px; list-style: decimal; }
+    .top-tracks-sparkline-list li { margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
+    .top-tracks-sparkline-list .track-info { flex-grow: 1; margin-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .top-tracks-sparkline-list .track-name { font-weight: 500; }
+    .top-tracks-sparkline-list .track-artist { font-size: 0.9em; color: #555; }
+    .top-tracks-sparkline-list .track-time { font-size: 0.9em; color: #777; margin-left: 5px; white-space: nowrap; }
+    .top-tracks-sparkline-list .sparkline { flex-shrink: 0; }
+    */
 }
+
+// function updateTopTracksChart(data) { // Renamed function
+//     const targetDiv = document.getElementById('top-tracks-chart'); // Target the same div
+//     if (!targetDiv) return;
+//     targetDiv.innerHTML = "";
+//     if (!requiredColumns.track_name) { /* ... error handling ... */ return; }
+//     if (!data || data.length === 0) { /* ... no data message ... */ return; }
+
+//     // Data aggregation (same as before)
+//     const trackData = d3.rollups(data.filter(d => d.track && d.track !== "Unknown Track" && d.track !== "N/A" && d.ms_played > 0), v => d3.sum(v, d => d.ms_played / 60000), d => `${d.track} • ${d.artist}`).sort((a, b) => d3.descending(a[1], b[1])).slice(0, 15);
+//     if (trackData.length === 0) { /* ... no track data message ... */ return; }
+
+//     // Dimensions (same as before)
+//     const chartHeight = trackData.length * 25 + chartMargin.top + chartMargin.bottom;
+//     const containerWidth = targetDiv.parentElement?.clientWidth || 400;
+//     const chartWidth = containerWidth > 0 ? containerWidth : 400;
+//     const width = chartWidth - chartMargin.left - chartMargin.right;
+//     const height = chartHeight - chartMargin.top - chartMargin.bottom;
+//     if (width <= 0 || height <= 0) { /* ... error handling ... */ return; }
+
+//     // SVG and Scales (same as before)
+//     const svg = d3.select(targetDiv).append("svg").attr("viewBox", `0 0 ${chartWidth} ${chartHeight}`).attr("preserveAspectRatio", "xMinYMid meet").append("g").attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
+//     const y = d3.scaleBand().range([0, height]).domain(trackData.map(d => d[0])).padding(0.4); // Adjust padding if needed
+//     const x = d3.scaleLinear().domain([0, d3.max(trackData, d => d[1]) || 1]).range([0, width]);
+
+//     // Axes (same as before)
+//     svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x).ticks(5).tickFormat(d => formatTime(d))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", chartMargin.bottom - 15).attr("fill", "currentColor").attr("text-anchor", "middle").text("Total Listening Time");
+//     const yAxis = svg.append("g").attr("class", "axis axis--y").call(d3.axisLeft(y).tickSize(0).tickPadding(5)); yAxis.select(".domain").remove(); yAxis.selectAll("text").attr("x", -5);
+
+//     // --- Lollipop Drawing ---
+//     const lollipopGroup = svg.selectAll(".lollipop")
+//         .data(trackData)
+//         .enter().append("g")
+//         .attr("class", "lollipop")
+//         .attr("transform", d => `translate(0, ${y(d[0]) + y.bandwidth() / 2})`); // Center vertically in band
+
+//     // Line
+//     lollipopGroup.append("line")
+//         .attr("x1", 0)
+//         .attr("x2", 0) // Start at 0 for animation
+//         .attr("stroke", "#aaa") // Lighter color for the line
+//         .attr("stroke-width", 2)
+//         .transition().duration(500)
+//         .attr("x2", d => Math.max(0, x(d[1]))); // Animate line length
+
+//     // Circle (Lollipop head)
+//     lollipopGroup.append("circle")
+//         .attr("cx", 0) // Start at 0 for animation
+//         .attr("r", 4) // Lollipop radius
+//         .attr("fill", "#1DB954") // Spotify green
+//         .on("mouseover", (event, d) => showTooltip(event, `<b>${d[0]}</b><br>${formatTime(d[1])}`))
+//         .on("mousemove", moveTooltip)
+//         .on("mouseout", hideTooltip)
+//         .transition().duration(500)
+//         .attr("cx", d => Math.max(0, x(d[1]))); // Animate circle position
+//     // --- End Lollipop Drawing ---
+// }
 
 
 function updateTimeOfDayChart(data) {
@@ -853,5 +982,8 @@ async function drawForceGraph(filteredData, containerId, topN = 10) {
         return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
     }
 }
+
+
+
 // --- REMOVED drawSankey FUNCTION ---
 // No drawSankey function definition needed anymore
