@@ -72,6 +72,45 @@
 
         <!-- Listening Timeline Chart -->
         <!-- Note: JS currently draws based on latest 24h, controls below are placeholders -->
+                 <!-- ================================== -->
+        <!-- ==== INDEPENDENT CHARTS START ==== -->
+        <!-- ================================== -->
+
+        <!-- Listening Timeline Chart -->
+        <div class="chart-container independent-chart"> <!-- Added container for consistency -->
+            <h2>Listening Timeline (Last 24h)</h2>   <!-- Added a title -->
+            <div id="timeline-chart"></div>           <!-- <<< ADD THIS LINE (and the wrapper/title) -->
+            <p class="chart-description">Shows individual listening events over the last 24 hours from the latest data point.</p> <!-- Added description -->
+        </div>
+
+        <!-- Content Type River Chart -->
+        <!-- Note: JS currently draws based on latest 7d, controls below are placeholders -->
+        <div class="chart-container independent-chart">
+            <h2>Content Type River</h2>
+             <!-- Placeholder Controls - JS logic needed to connect these -->
+             <div class="controls stream-controls" style="display: none;"> <!-- Hidden for now -->
+                <div><label for="streamStartDate">Start Date:</label><input type="date" id="streamStartDate" /></div>
+                <div><label for="streamEndDate">End Date:</label><input type="date" id="streamEndDate" /></div>
+                <button id="streamApplyBtn">Update River</button>
+            </div>
+            <div id="streamgraph-chart"></div> <!-- Target for JS -->
+             <p class="chart-description">Shows the volume of listening time (minutes) by content type over the past 7 days from latest data.</p>
+        </div>
+
+        <!-- Force-Directed Artist Transition Graph (Selected Period) -->
+        <div class="chart-container"> <!-- Keep using chart-container -->
+            <h2>Artist Transition Graph (in Main View)</h2> <!-- UPDATED TITLE -->
+            <div id="force-graph-chart"></div> <!-- <<< CHANGED ID -->
+             <p class="chart-description">Shows transitions between the top 10 most played artists *in the selected period*. Drag nodes to rearrange.</p> <!-- UPDATED DESCRIPTION -->
+        </div>
+
+        <!-- ================================ -->
+        <!-- ==== INDEPENDENT CHARTS END ==== -->
+        <!-- ================================ -->
+
+        <!-- ================================ -->
+        <!-- ==== INDEPENDENT CHARTS END ==== -->
+        <!-- ================================ -->
 
 
         <!-- Content Type River Chart -->
