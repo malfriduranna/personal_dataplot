@@ -116,7 +116,7 @@
     <script src="scripts/spotifyDashboard.js" type="module" defer></script>
 
     <script>
-      fetch("components/index_overview.html")
+      fetch("index_overview.html")
         .then((response) => response.text())
         .then((data) => {
           document.getElementById("include-overview").innerHTML = data;
