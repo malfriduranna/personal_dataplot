@@ -1,0 +1,37 @@
+.controls {
+  padding: 1rem 1.5rem;
+  border-radius: var(--border-radius-small);
+  /* Keeping the original box-shadow as a static value */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: calc(var(--spacing) * 2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing);
+  align-items: center;
+}
+
+.controls label {
+  margin-right: calc(var(--spacing) / 2);
+  font-weight: 500;
+}
+
+.controls select,
+.controls input[type="date"],
+.controls button {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--header-color);
+  border-radius: var(--border-radius-small);
+  font-size: var(--font-small-size);
+}
+
+.controls button {
+  background-color: var(--dark-green-color);
+  color: var(--white-color);
+  border-color: var(--dark-green-color);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.controls button:hover {
+  background-color: var(--spotify-color);
+}
