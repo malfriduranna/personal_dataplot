@@ -1,4 +1,4 @@
-d3.csv("../data/astrid_data.csv").then(function(data) {
+d3.csv("data/astrid_data.csv").then(function(data) {
     data.forEach(d => {
       if (d.ts) {
         d.year = d.ts.slice(0, 4);
