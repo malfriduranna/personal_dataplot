@@ -289,6 +289,45 @@ function updatePeakListening(data, artistName) {
   }
 }
 
+function wrapText(textSelection, maxWidth, maxLines = 3) {
+  textSelection.each(function () {
+    const text = d3.select(this);
+    const words = text.text().split(/\s+/);
+    text.text(null);
+    let line = [];
+    let lineNumber = 0;
+    const lineHeight = 1.1; // ems
+    const x = text.attr("x") || 0;
+    const y = text.attr("y") || 0;
+    let dy = parseFloat(text.attr("dy")) || 0;
+    let tspan = text
+      .append("tspan")
+      .attr("x", x)
+      .attr("y", y)
+      .attr("dy", dy + "em")
+      .text("");
+    for (let i = 0; i < words.length; i++) {
+      line.push(words[i]);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > maxWidth && line.length > 1) {
+        line.pop();
+        tspan.text(line.join(" "));
+        line = [words[i]];
+        lineNumber++;
+        if (lineNumber >= maxLines) {
+          tspan.text(tspan.text() + " …");
+          break;
+        }
+        tspan = text
+          .append("tspan")
+          .attr("x", x)
+          .attr("dy", lineHeight + "em")
+          .text(words[i]);
+      }
+    }
+  });
+}
+
 /***********************
  * Drill-Down: Song Distribution as a Radar Chart
  ***********************/
@@ -300,47 +339,6 @@ function updateSongDistribution(artistData) {
     placeholder.style("display", "none");
   } else {
     placeholder.style("display", "block");
-  }
-  function wrapText(textSelection, maxWidth, maxLines = 3) {
-    textSelection.each(function () {
-      const text = d3.select(this);
-      const words = text.text().split(/\s+/);
-      text.text(null);
-      let line = [];
-      let lineNumber = 0;
-      const lineHeight = 1.1; // ems
-      const x = text.attr("x") || 0;
-      const y = text.attr("y") || 0;
-      let dy = parseFloat(text.attr("dy")) || 0;
-      let tspan = text
-        .append("tspan")
-        .attr("x", x)
-        .attr("y", y)
-        .attr("dy", dy + "em")
-        .text("");
-      for (let i = 0; i < words.length; i++) {
-        line.push(words[i]);
-        tspan.text(line.join(" "));
-        if (
-          tspan.node().getComputedTextLength() > maxWidth &&
-          line.length > 1
-        ) {
-          line.pop();
-          tspan.text(line.join(" "));
-          line = [words[i]];
-          lineNumber++;
-          if (lineNumber >= maxLines) {
-            tspan.text(tspan.text() + " …");
-            break;
-          }
-          tspan = text
-            .append("tspan")
-            .attr("x", x)
-            .attr("dy", lineHeight + "em")
-            .text(words[i]);
-        }
-      }
-    });
   }
 
   // Filter data based on drill-down state.
@@ -592,7 +590,7 @@ function updateSongDistribution(artistData) {
       .text((d) => `${d.track}: ${d.minutes.toFixed(1)} minutes`);
   } else {
     // If more than 2 songs, create the radar chart.
-    const overallSize = 300;
+    const overallSize = 250;
     const margin = { top: 20, right: 0, bottom: 20, left: 0 }; // Reduced margins
     const width = 400;
     const height = overallSize - margin.top - margin.bottom;
@@ -603,8 +601,13 @@ function updateSongDistribution(artistData) {
 
     const svg = chartArea
       .append("svg")
-      .attr("width", width)
-      .attr("height", overallSize)
+      .attr(
+        "viewBox",
+        `0 0 ${width + margin.left + margin.right} ${
+          height + margin.top + margin.bottom
+        }`
+      )
+      .attr("preserveAspectRatio", "xMidYMid meet")
       .append("g")
       .attr(
         "transform",
@@ -965,12 +968,14 @@ function updateScatterPlot(data, artistName) {
       d.master_metadata_album_artist_name.toLowerCase() ===
         artistName.toLowerCase()
   );
+
   if (!artistData.length) {
     d3.select("#scatterChart").html(
       "<p class='empty-message'>No listening data found for this artist.</p>"
     );
     return;
   }
+
   const trackStats = d3
     .rollups(
       artistData,
@@ -987,38 +992,69 @@ function updateScatterPlot(data, artistName) {
       (d) => d.master_metadata_track_name
     )
     .map(([track, stats]) => ({ track, ...stats }));
+
+  // Compute 95th percentile thresholds for outliers
+  const maxMinutesThreshold = d3.quantile(
+    trackStats.map((d) => d.maxMinutes).sort(d3.ascending),
+    0.99
+  );
+  const totalMinutesThreshold = d3.quantile(
+    trackStats.map((d) => d.totalMinutes).sort(d3.ascending),
+    0.99
+  );
+
+  // Identify outlier tracks
+  const outliers = trackStats.filter(
+    (d) =>
+      d.maxMinutes > maxMinutesThreshold ||
+      d.totalMinutes > totalMinutesThreshold
+  );
+
   d3.select("#scatterChart").select("svg").remove();
+
   const margin = { top: 30, right: 30, bottom: 50, left: 50 },
     width = 400 - margin.left - margin.right,
-    height = 400 - margin.top - margin.bottom;
+    height = 300 - margin.top - margin.bottom;
+
   const svg = d3
     .select("#scatterChart")
     .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    .attr(
+      "viewBox",
+      `0 0 ${width + margin.left + margin.right} ${
+        height + margin.top + margin.bottom
+      }`
+    )
+    .attr("preserveAspectRatio", "xMidYMid meet")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
+
   const x = d3
     .scaleLinear()
     .domain([0, d3.max(trackStats, (d) => d.totalMinutes)])
     .nice()
     .range([0, width]);
+
   const y = d3
     .scaleLinear()
     .domain([0, d3.max(trackStats, (d) => d.maxMinutes)])
     .nice()
     .range([height, 0]);
+
   svg
     .append("g")
     .attr("transform", `translate(0,${height})`)
     .call(d3.axisBottom(x));
+
   svg.append("g").call(d3.axisLeft(y));
+
   svg
     .append("text")
     .attr("x", width)
     .attr("y", height + 40)
     .attr("text-anchor", "end")
     .text("Total Minutes Played");
+
   svg
     .append("text")
     .attr("transform", "rotate(-90)")
@@ -1026,6 +1062,7 @@ function updateScatterPlot(data, artistName) {
     .attr("x", -10)
     .attr("text-anchor", "end")
     .text("Max Minutes in a Day");
+
   const circles = svg
     .selectAll("circle")
     .data(trackStats)
@@ -1036,6 +1073,7 @@ function updateScatterPlot(data, artistName) {
     .attr("r", 0)
     .attr("fill", "#69b3a2")
     .attr("opacity", 0.7);
+
   circles
     .append("title")
     .text(
@@ -1044,11 +1082,32 @@ function updateScatterPlot(data, artistName) {
           1
         )} max`
     );
+
   circles
     .transition()
     .duration(800)
     .attr("r", 6)
     .delay((d, i) => i * 10);
+
+  // Add labels for outlier tracks
+  const labels = svg
+    .selectAll(".label")
+    .data(outliers)
+    .enter()
+    .append("text")
+    .attr("class", "label")
+    .attr("x", (d) => x(d.totalMinutes) + 8)
+    .attr("y", (d) => y(d.maxMinutes))
+    .text((d) => d.track)
+    .style("font-size", "10px")
+    .style("fill", "#333")
+    .style("opacity", 0);
+
+  // Apply the wrap function here
+  wrapText(labels, 80, 3); // You can adjust max width and lines
+
+  // Fade in after wrapping
+  labels.transition().duration(800).style("opacity", 1);
 }
 
 /***********************
@@ -1508,7 +1567,7 @@ function updateAllCharts(data, artistName) {
   drillDownState.selectedAlbum = null;
   const chartContainer = d3.select("#songDistChart");
   chartContainer.html("");
-  chartContainer.append("h2").text("Song Distribution");
+  chartContainer.append("h2").text("Album Details");
 
   if (chartContainer.select("#albumPlaceholder").empty()) {
     chartContainer
