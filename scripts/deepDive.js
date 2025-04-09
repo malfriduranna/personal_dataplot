@@ -153,8 +153,13 @@ function updatePeakListening(data, artistName) {
 
   const svg = container
     .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    .attr(
+      "viewBox",
+      `0 0 ${width + margin.left + margin.right} ${
+        height + margin.top + margin.bottom
+      }`
+    )
+    .attr("preserveAspectRatio", "xMidYMid meet")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -201,6 +206,22 @@ function updatePeakListening(data, artistName) {
     .text("Minutes Played");
 
   // Draw the line
+  // Area under the line
+  const area = d3
+    .area()
+    .x((d) => xScale(d[0]))
+    .y0(height)
+    .y1((d) => yScale(d[1]))
+    .curve(d3.curveMonotoneX);
+
+  svg
+    .append("path")
+    .datum(grouped)
+    .attr("fill", "#4caf4f")
+    .attr("fill-opacity", 0.2)
+    .attr("d", area);
+
+  // Line itself
   svg
     .append("path")
     .datum(grouped)
@@ -208,6 +229,25 @@ function updatePeakListening(data, artistName) {
     .attr("stroke", "#4caf4f")
     .attr("stroke-width", 2)
     .attr("d", line);
+
+  // Circle for peak
+  const peak = grouped.reduce((a, b) => (a[1] > b[1] ? a : b));
+  svg
+    .append("circle")
+    .attr("cx", xScale(peak[0]))
+    .attr("cy", yScale(peak[1]))
+    .attr("r", 5)
+    .attr("fill", "#388e3c");
+
+  // Label for peak
+  svg
+    .append("text")
+    .attr("x", xScale(peak[0]))
+    .attr("y", yScale(peak[1]) - 10)
+    .attr("text-anchor", "middle")
+    .style("font-size", "0.8rem")
+    .style("fill", "#2e7d32")
+    .text(`${peak[1].toFixed(1)} min`);
 
   // Remove the code that adds circles for data points.
   // (If you need tooltips, consider using mouse events on the line itself.)
