@@ -1,0 +1,26 @@
+.chart_wrapper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  transition: width 2s ease;
+}
+
+.chart_svg {
+  width: 550px;
+  flex-shrink: 0;
+}
+
+.chart_container.full_width {
+  width: 550px;
+}
+
+/* Style for your side panel */
+#sidePanel {
+  background: var(--pastel-green-color);
+  padding: var(--spacing);
+  border: 1px solid #ccc;
+  width: 40%;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: width 0.5s ease; /* transition added */
+}
