@@ -38,8 +38,3 @@
 .full_width {
   flex: 1 1 100%;
 }
-
-#songDistChart {
-  min-height: 350px;
-  overflow: auto;
-}

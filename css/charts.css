@@ -53,8 +53,13 @@
   border: 1px solid #ddd;
   box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
   width: 45.5%;
-  min-height: 400px;   /* Fixed height */
-  overflow-y: auto; /* Scrollbars appear if content overflows */
+  min-height: 400px;
+  transition: width 2s ease;
+  position: relative;
+}
+
+.chart_container.full_width {
+  width: 100%;
 }
 
 .chart_container svg {

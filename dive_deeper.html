@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="css/search-engine.css" />
     <link rel="stylesheet" href="css/controls.css" />
     <link rel="stylesheet" href="css/tooltip.css" />
+    <link rel="stylesheet" href="css/scatterplot.css" />
   </head>
   <body>
     <div class="layout">
@@ -83,9 +84,12 @@
           <div id="sunburstChart" class="chart_container">
             <h2>Album vs. Single Listening (Sunburst Chart)</h2>
           </div>
-          <div id="songDistChart" class="chart_container">
-            <h2>Song Distribution</h2>
+          <div id="albumDist" class="chart_container">
+            <h2>Album Details</h2>
             <!-- This panel will be updated on drill–down -->
+            <p id="albumPlaceholder">
+              Select an album to see more details
+            </p>
           </div>
         </div>
 
@@ -94,14 +98,24 @@
           <div id="scatterChart" class="chart_container">
             <h2>Track Listening Scatter Plot</h2>
           </div>
-          <div id="moodSankey" class="chart_container">
-            <h2>Mood & Behavior Sankey</h2>
+          <div id="songDist" class="chart_container">
+            <h2>Song Details</h2>
+            <!-- This panel will be updated on drill–down -->
+            <p id="songPlaceholder">
+              Select an song to see more details
+            </p>
+          </div>
+        </div>
+
+        <div class="row">
+          <div id="moodSankey" class="chart_container full_width">
+            <h2>Track Mood Sankey Diagram</h2>
           </div>
         </div>
       </main>
 
       <footer class="footer">
-        <img src="img/logo.png" class="footer_logo" alt="Logo" />
+        <img src="img/Logo.png" class="footer_logo" alt="Logo" />
         <nav class="footer_nav">
           <ul>
             <li><a href="/about">About</a></li>
