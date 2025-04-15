@@ -112,5 +112,32 @@
       class="sunburst_tooltip"></div>
 
     <script src="scripts/deepDive.js" type="module" defer></script>
+
+    <script>
+      function loadComponent(url, placeholderId) {
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+          })
+          .then(data => {
+            const placeholder = document.getElementById(placeholderId);
+            if (placeholder) {
+              placeholder.innerHTML = data;
+            } else {
+              console.warn(`Placeholder element with ID '${placeholderId}' not found.`);
+            }
+          })
+          .catch(error => console.error(`Error loading component ${url}:`, error));
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+         loadComponent('header.html', 'header-placeholder');
+         loadComponent('footer.html', 'footer-placeholder');
+
+      });
+    </script>
   </body>
 </html>
