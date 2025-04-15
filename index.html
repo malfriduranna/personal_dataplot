@@ -52,7 +52,7 @@
         </section>
 
         <section id="wrapped-section">
-          <h1>Spotify Listening Dashboard</h1>
+          <h1>Spotify Listening Dashboard2</h1>
           <div id="include-wrapped"></div>
         </section>
 
@@ -99,7 +99,7 @@
         .then((data) => {
           document.getElementById("include-overview").innerHTML = data;
 
-          // 💡 Dynamically load and execute the script
+          // Dynamically load and execute the script
           const script = document.createElement("script");
           script.src = "scripts/get_overview.js";
           document.body.appendChild(script);
@@ -114,7 +114,7 @@
           if (wrappedMain) {
             document.getElementById("include-wrapped").innerHTML = wrappedMain.innerHTML;
     
-            // ✅ Dynamically load the dashboard script AFTER content is inserted
+            // Dynamically load the dashboard script AFTER content is inserted
             const script = document.createElement("script");
             script.src = "scripts/spotifyDashboard.js";
             script.type = "module";

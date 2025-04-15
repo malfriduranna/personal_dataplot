@@ -42,20 +42,26 @@
                 <div id="calendar"></div>
                 <div id="legend"></div>
             </div>
-            <div id="top-artists-container">
-                <h2>Top 5 Artists (in Main View)</h2>
-                <ul id="topArtists"></ul>
+            <div class="top-lists-container">
+                <div id="top-artists-container">
+                    <h2>Top 5 Artists</h2>
+                    <ul id="topArtists"></ul>
+                </div>
+                <div class="chart-container" id="top-tracks-container">
+                    <h2>Top 5 Tracks</h2>
+                    <!-- Inner div ID matches JS target -->
+                    <div id="top-tracks-chart"></div>
+                </div>
             </div>
         </div>
+
+
+
 
         <!-- Row for charts linked to Main View -->
         <div class="charts-row">
             <!-- Container ID matches CSS/JS convention -->
-            <div class="chart-container" id="top-tracks-container">
-                 <h2>Top Tracks (in Main View)</h2>
-                 <!-- Inner div ID matches JS target -->
-                 <div id="top-tracks-chart"></div>
-            </div>
+ 
             <div class="chart-container" id="time-of-day-container">
                  <h2>Time of Day (in Main View)</h2>
                  <div id="time-of-day-chart"></div>
@@ -67,22 +73,17 @@
         </div>
 
         <!-- ================================== -->
-        <!-- ==== INDEPENDENT CHARTS START ==== -->
-        <!-- ================================== -->
 
-        <!-- Listening Timeline Chart -->
-        <!-- Note: JS currently draws based on latest 24h, controls below are placeholders -->
-        <div class="chart-container independent-chart">
-            <h2>Listening Timeline</h2>
-             <!-- Placeholder Controls - JS logic needed to connect these -->
-             <div class="controls timeline-controls" style="display: none;"> <!-- Hidden for now -->
-                <div><label for="timelineStartDate">Start Date:</label><input type="date" id="timelineStartDate" /></div>
-                <div><label for="timelineEndDate">End Date:</label><input type="date" id="timelineEndDate" /></div>
-                <button id="timelineApplyBtn">Update Timeline</button>
-            </div>
-            <div id="timeline-chart"></div> <!-- Target for JS -->
-            <p class="chart-description">Each block is a listening event (last 24h from latest data). Length=duration, color=platform. Red border=skipped.</p>
+
+        <!-- Force-Directed Artist Transition Graph (Selected Period) -->
+        <div class="chart-container"> <!-- Keep using chart-container -->
+            <h2>Artist Transition Graph (in Main View)</h2> <!-- UPDATED TITLE -->
+            <div id="force-graph-chart"></div> <!-- <<< CHANGED ID -->
+             <p class="chart-description">Shows transitions between the top 10 most played artists *in the selected period*. Drag nodes to rearrange.</p> <!-- UPDATED DESCRIPTION -->
         </div>
+
+
+
 
         <!-- Content Type River Chart -->
         <!-- Note: JS currently draws based on latest 7d, controls below are placeholders -->
@@ -99,11 +100,7 @@
         </div>
 
         <!-- Sankey Chart -->
-         <div class="chart-container"> <!-- Removed independent-chart class if it's always overall -->
-            <h2>Top Artist Play Flow (Overall Dataset)</h2>
-            <div id="sankey-chart"></div> <!-- Target for JS -->
-             <p class="chart-description">Shows common transitions between the top 10 most played artists in the entire dataset.</p>
-        </div>
+
 
         <!-- ================================ -->
         <!-- ==== INDEPENDENT CHARTS END ==== -->
