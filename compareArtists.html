@@ -1,909 +1,1039 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Artist Comparison</title>
-  <!-- Include D3 -->
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <!-- <script src="scripts/layout.js" defer></script> -->
-  <style>
-    :root {
-      --primary-color: #0d6efd;
-      --secondary-color: #dc3545; /* Example for the second artist line */
-      --background-color: #f8f9fa;
-      --card-bg: #ffffff;
-      --text-color: #343a40;
-      --border-radius: 8px;
-      --transition-speed: 0.3s;
-    }
-    body {
-      font-family: sans-serif;
-      background-color: var(--background-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 1rem 2rem;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-    .controls {
-      max-width: 800px;
-      margin: 0 auto 2rem;
-      padding: 1rem;
-      background-color: var(--card-bg);
-      border-radius: var(--border-radius);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      justify-content: center;
-      position: relative; /* For autocomplete positioning */
-    }
-    .controls div {
-      position: relative; /* So autocomplete dropdown can position */
-    }
-    .controls label {
-      margin-right: 0.5rem;
-      font-weight: 500;
-    }
-    .controls input,
-    .controls button {
-      padding: 0.4rem 0.6rem;
-      border: 1px solid #ced4da;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      transition: border-color var(--transition-speed);
-    }
-    .controls button {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .controls button:hover {
-      background-color: #0b5ed7;
-    }
-    .results-container {
-      max-width: 800px;
-      margin: 0 auto;
-      display: flex;
-      gap: 2rem;
-      margin-bottom: 2rem; /* Add spacing before chart */
-    }
-    .artist-card {
-      flex: 1;
-      background-color: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 1rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    .artist-card h2 {
-      margin-top: 0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    table th, table td {
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      text-align: left;
-    }
-    .empty-message {
-      text-align: center;
-      font-style: italic;
-      color: #666;
-      margin-top: 1rem;
-    }
-    /* Autocomplete Dropdown Styles */
-    .autocomplete-items {
-      position: absolute;
-      border: 1px solid #ddd;
-      border-top: none;
-      z-index: 99;
-      top: 100%;
-      left: 0;
-      right: 0;
-      max-height: 150px;
-      overflow-y: auto;
-      background-color: #fff;
-    }
-    .autocomplete-items div {
-      padding: 0.5rem;
-      cursor: pointer;
-      background-color: #fff;
-      border-bottom: 1px solid #ddd;
-    }
-    .autocomplete-items div:hover, .autocomplete-active {
-      background-color: #e9e9e9;
-    }
-    /* Chart Container */
-    .chart-container {
-      max-width: 800px;
-      margin: 0 auto;
-      background-color: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 1rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    .chart-container h2 {
-      margin-top: 0;
-    }
-    /* Axes text */
-    .axis text {
-      fill: #495057;
-      font-size: 0.75rem;
-    }
-    .axis path,
-    .axis line {
-      stroke: #adb5bd;
-    }
-    /* Optional legend styling */
-    .legend-container {
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-      display: flex;
-      gap: 1rem;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-    .legend-color-box {
-      width: 14px;
-      height: 14px;
-      border-radius: 2px;
-    }
-  </style>
-</head>
-<body>
-  <div id="header-placeholder"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Artist Comparison</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/header.css" />
+    <link rel="stylesheet" href="css/footer.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <!-- Include D3 -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 
-  <!-- <h1>Spotify Listening Dashboard blabla</h1> -->
+    <!-- <script src="scripts/layout.js" defer></script> -->
+    <style>
+      :root {
+        --primary-color: #0d6efd;
+        --secondary-color: #dc3545; /* Example for the second artist line */
+        --background-color: #f8f9fa;
+        --card-bg: #ffffff;
+        --text-color: #343a40;
+        --border-radius: 8px;
+        --transition-speed: 0.3s;
+      }
+      body {
+        font-family: sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 1rem 2rem;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+      .controls {
+        max-width: 800px;
+        margin: 0 auto 2rem;
+        padding: 1rem;
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+        position: relative; /* For autocomplete positioning */
+      }
+      .controls div {
+        position: relative; /* So autocomplete dropdown can position */
+      }
+      .controls label {
+        margin-right: 0.5rem;
+        font-weight: 500;
+      }
+      .controls input,
+      .controls button {
+        padding: 0.4rem 0.6rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        transition: border-color var(--transition-speed);
+      }
+      .controls button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      .controls button:hover {
+        background-color: #0b5ed7;
+      }
+      .results-container {
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 2rem; /* Add spacing before chart */
+      }
+      .artist-card {
+        flex: 1;
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+      .artist-card h2 {
+        margin-top: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+      table th,
+      table td {
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        text-align: left;
+      }
+      .empty-message {
+        text-align: center;
+        font-style: italic;
+        color: #666;
+        margin-top: 1rem;
+      }
+      /* Autocomplete Dropdown Styles */
+      .autocomplete-items {
+        position: absolute;
+        border: 1px solid #ddd;
+        border-top: none;
+        z-index: 99;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 150px;
+        overflow-y: auto;
+        background-color: #fff;
+      }
+      .autocomplete-items div {
+        padding: 0.5rem;
+        cursor: pointer;
+        background-color: #fff;
+        border-bottom: 1px solid #ddd;
+      }
+      .autocomplete-items div:hover,
+      .autocomplete-active {
+        background-color: #e9e9e9;
+      }
+      /* Chart Container */
+      .chart-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+      .chart-container h2 {
+        margin-top: 0;
+      }
+      /* Axes text */
+      .axis text {
+        fill: #495057;
+        font-size: 0.75rem;
+      }
+      .axis path,
+      .axis line {
+        stroke: #adb5bd;
+      }
+      /* Optional legend styling */
+      .legend-container {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        display: flex;
+        gap: 1rem;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .legend-color-box {
+        width: 14px;
+        height: 14px;
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header-placeholder"></div>
 
-  <h1>Compare Two Artists</h1>
-  
-  <!-- Search and filter controls -->
-  <div class="controls">
-    <div>
-      <label for="artist1">Artist 1:</label>
-      <input type="text" id="artist1" placeholder="Enter first artist name" autocomplete="off" />
+    <!-- <h1>Spotify Listening Dashboard blabla</h1> -->
+
+    <h1>Compare Two Artists</h1>
+
+    <!-- Search and filter controls -->
+    <div class="controls">
+      <div>
+        <label for="artist1">Artist 1:</label>
+        <input
+          type="text"
+          id="artist1"
+          placeholder="Enter first artist name"
+          autocomplete="off"
+        />
+      </div>
+      <div>
+        <label for="artist2">Artist 2:</label>
+        <input
+          type="text"
+          id="artist2"
+          placeholder="Enter second artist name"
+          autocomplete="off"
+        />
+      </div>
+      <div>
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate" />
+      </div>
+      <div>
+        <label for="endDate">End Date:</label>
+        <input type="date" id="endDate" />
+      </div>
+      <div>
+        <button id="compareBtn">Compare</button>
+      </div>
     </div>
-    <div>
-      <label for="artist2">Artist 2:</label>
-      <input type="text" id="artist2" placeholder="Enter second artist name" autocomplete="off" />
-    </div>
-    <div>
-      <label for="startDate">Start Date:</label>
-      <input type="date" id="startDate" />
-    </div>
-    <div>
-      <label for="endDate">End Date:</label>
-      <input type="date" id="endDate" />
-    </div>
-    <div>
-      <button id="compareBtn">Compare</button>
-    </div>
-  </div>
-  
-  <!-- Results Container -->
-  <div class="results-container">
-    <div id="artist1-results" class="artist-card">
-      <h2>Artist 1 Data</h2>
-      <div class="content"></div>
-    </div>
-    <div id="artist2-results" class="artist-card">
-      <h2>Artist 2 Data</h2>
-      <div class="content"></div>
-    </div>
-  </div>
 
-  <!-- Chart Container -->
-  <div id="comparison-chart-container" class="chart-container">
-    <h2>Listening Time Comparison Over Time</h2>
-    <div id="comparison-chart"></div>
-  </div>
+    <!-- Results Container -->
+    <div class="results-container">
+      <div id="artist1-results" class="artist-card">
+        <h2>Artist 1 Data</h2>
+        <div class="content"></div>
+      </div>
+      <div id="artist2-results" class="artist-card">
+        <h2>Artist 2 Data</h2>
+        <div class="content"></div>
+      </div>
+    </div>
 
-  <script>
-    // Configuration
-    const csvUrl = "data/spotify_listening_history.csv"; // Update this path if needed
+    <!-- Chart Container -->
+    <div id="comparison-chart-container" class="chart-container">
+      <h2>Listening Time Comparison Over Time</h2>
+      <div id="comparison-chart"></div>
+    </div>
 
-    // Access DOM Elements
-    const artist1Input = document.getElementById('artist1');
-    const artist2Input = document.getElementById('artist2');
-    const startDateInput = document.getElementById('startDate');
-    const endDateInput = document.getElementById('endDate');
-    const compareBtn = document.getElementById('compareBtn');
-    const artist1Results = document.querySelector('#artist1-results .content');
-    const artist2Results = document.querySelector('#artist2-results .content');
-    const comparisonChartDiv = document.getElementById('comparison-chart');
+    <script>
+      // Configuration
+      const csvUrl = "data/spotify_listening_history.csv"; // Update this path if needed
 
-    // For Autocomplete
-    let artistList = [];
+      // Access DOM Elements
+      const artist1Input = document.getElementById("artist1");
+      const artist2Input = document.getElementById("artist2");
+      const startDateInput = document.getElementById("startDate");
+      const endDateInput = document.getElementById("endDate");
+      const compareBtn = document.getElementById("compareBtn");
+      const artist1Results = document.querySelector(
+        "#artist1-results .content"
+      );
+      const artist2Results = document.querySelector(
+        "#artist2-results .content"
+      );
+      const comparisonChartDiv = document.getElementById("comparison-chart");
 
-    // Preload CSV to gather unique artists for autocomplete
-    d3.csv(csvUrl).then(data => {
-      artistList = Array.from(
-        new Set(
-          data.map(d => d.master_metadata_album_artist_name || "")
-              .filter(name => name.trim() !== "")
-        )
-      ).sort();
-      // Initialize autocomplete
-      autocomplete(artist1Input, artistList);
-      autocomplete(artist2Input, artistList);
-    }).catch(err => {
-      console.error("Error loading CSV for autocomplete:", err);
-    });
+      // For Autocomplete
+      let artistList = [];
 
-    // Autocomplete function
-    function autocomplete(inp, arr) {
-      let currentFocus;
-      inp.addEventListener("input", function(e) {
-        let a, b, i, val = this.value;
-        closeAllLists();
-        if (!val) { return false; }
-        currentFocus = -1;
-        a = document.createElement("div");
-        a.setAttribute("id", this.id + "autocomplete-list");
-        a.setAttribute("class", "autocomplete-items");
-        this.parentNode.appendChild(a);
-        for (i = 0; i < arr.length; i++) {
-          if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
-            b = document.createElement("div");
-            b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
-            b.innerHTML += arr[i].substr(val.length);
-            b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
-            b.addEventListener("click", function(e) {
-              inp.value = this.getElementsByTagName("input")[0].value;
-              closeAllLists();
-            });
-            a.appendChild(b);
+      // Preload CSV to gather unique artists for autocomplete
+      d3.csv(csvUrl)
+        .then((data) => {
+          artistList = Array.from(
+            new Set(
+              data
+                .map((d) => d.master_metadata_album_artist_name || "")
+                .filter((name) => name.trim() !== "")
+            )
+          ).sort();
+          // Initialize autocomplete
+          autocomplete(artist1Input, artistList);
+          autocomplete(artist2Input, artistList);
+        })
+        .catch((err) => {
+          console.error("Error loading CSV for autocomplete:", err);
+        });
+
+      // Autocomplete function
+      function autocomplete(inp, arr) {
+        let currentFocus;
+        inp.addEventListener("input", function (e) {
+          let a,
+            b,
+            i,
+            val = this.value;
+          closeAllLists();
+          if (!val) {
+            return false;
+          }
+          currentFocus = -1;
+          a = document.createElement("div");
+          a.setAttribute("id", this.id + "autocomplete-list");
+          a.setAttribute("class", "autocomplete-items");
+          this.parentNode.appendChild(a);
+          for (i = 0; i < arr.length; i++) {
+            if (
+              arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()
+            ) {
+              b = document.createElement("div");
+              b.innerHTML =
+                "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+              b.innerHTML += arr[i].substr(val.length);
+              b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+              b.addEventListener("click", function (e) {
+                inp.value = this.getElementsByTagName("input")[0].value;
+                closeAllLists();
+              });
+              a.appendChild(b);
+            }
+          }
+        });
+        inp.addEventListener("keydown", function (e) {
+          let x = document.getElementById(this.id + "autocomplete-list");
+          if (x) x = x.getElementsByTagName("div");
+          if (e.keyCode == 40) {
+            currentFocus++;
+            addActive(x);
+          } else if (e.keyCode == 38) {
+            currentFocus--;
+            addActive(x);
+          } else if (e.keyCode == 13) {
+            e.preventDefault();
+            if (currentFocus > -1) {
+              if (x) x[currentFocus].click();
+            }
+          }
+        });
+        function addActive(x) {
+          if (!x) return false;
+          removeActive(x);
+          if (currentFocus >= x.length) currentFocus = 0;
+          if (currentFocus < 0) currentFocus = x.length - 1;
+          x[currentFocus].classList.add("autocomplete-active");
+        }
+        function removeActive(x) {
+          for (let i = 0; i < x.length; i++) {
+            x[i].classList.remove("autocomplete-active");
           }
         }
-      });
-      inp.addEventListener("keydown", function(e) {
-        let x = document.getElementById(this.id + "autocomplete-list");
-        if (x) x = x.getElementsByTagName("div");
-        if (e.keyCode == 40) {
-          currentFocus++;
-          addActive(x);
-        } else if (e.keyCode == 38) {
-          currentFocus--;
-          addActive(x);
-        } else if (e.keyCode == 13) {
-          e.preventDefault();
-          if (currentFocus > -1) {
-            if (x) x[currentFocus].click();
+        function closeAllLists(elmnt) {
+          let x = document.getElementsByClassName("autocomplete-items");
+          for (let i = 0; i < x.length; i++) {
+            if (elmnt != x[i] && elmnt != inp) {
+              x[i].parentNode.removeChild(x[i]);
+            }
           }
         }
-      });
-      function addActive(x) {
-        if (!x) return false;
-        removeActive(x);
-        if (currentFocus >= x.length) currentFocus = 0;
-        if (currentFocus < 0) currentFocus = (x.length - 1);
-        x[currentFocus].classList.add("autocomplete-active");
+        document.addEventListener("click", function (e) {
+          closeAllLists(e.target);
+        });
       }
-      function removeActive(x) {
-        for (let i = 0; i < x.length; i++) {
-          x[i].classList.remove("autocomplete-active");
+
+      // Compare Flow
+      compareBtn.addEventListener("click", compareArtists);
+
+      async function compareArtists() {
+        const artist1Name = artist1Input.value.trim();
+        const artist2Name = artist2Input.value.trim();
+        const startDateVal = startDateInput.value;
+        const endDateVal = endDateInput.value;
+
+        if (!artist1Name || !artist2Name || !startDateVal || !endDateVal) {
+          alert("Please fill in both artist names and a valid date range.");
+          return;
+        }
+        const startDate = new Date(startDateVal);
+        const endDate = new Date(endDateVal);
+        if (startDate > endDate) {
+          alert("The start date must be before the end date.");
+          return;
+        }
+
+        try {
+          const allData = await d3.csv(csvUrl);
+
+          // Filter each artist's data
+          const dataArtist1 = filterDataForArtist(
+            allData,
+            artist1Name,
+            startDate,
+            endDate
+          );
+          const dataArtist2 = filterDataForArtist(
+            allData,
+            artist2Name,
+            startDate,
+            endDate
+          );
+
+          // Display aggregated table results
+          const artist1Agg = aggregateArtistData(dataArtist1);
+          const artist2Agg = aggregateArtistData(dataArtist2);
+          displayResults(artist1Agg, artist1Results);
+          displayResults(artist2Agg, artist2Results);
+
+          // Now draw the comparison chart
+          // drawComparisonChart(artist1Name, dataArtist1, artist2Name, dataArtist2, comparisonChartDiv);
+          drawComparisonChartStacked3(
+            artist1Name,
+            dataArtist1,
+            artist2Name,
+            dataArtist2,
+            comparisonChartDiv
+          );
+        } catch (error) {
+          console.error("Error loading or processing CSV data:", error);
+          alert(
+            "There was an error loading the data. See console for details."
+          );
         }
       }
-      function closeAllLists(elmnt) {
-        let x = document.getElementsByClassName("autocomplete-items");
-        for (let i = 0; i < x.length; i++) {
-          if (elmnt != x[i] && elmnt != inp) {
-            x[i].parentNode.removeChild(x[i]);
-          }
+
+      // Helper: filter data for a given artist and date range
+      function filterDataForArtist(data, artistName, startDate, endDate) {
+        return data.filter((d) => {
+          const a = (d.master_metadata_album_artist_name || "").toLowerCase();
+          const matchArtist = a.includes(artistName.toLowerCase());
+          const tsDate = new Date(d.ts);
+          return matchArtist && tsDate >= startDate && tsDate <= endDate;
+        });
+      }
+
+      // Helper: Summaries for table (total plays, total minutes, top track)
+      function aggregateArtistData(filtered) {
+        if (!filtered.length) {
+          return {
+            totalPlays: 0,
+            totalMinutes: 0,
+            topTrack: "N/A",
+            topTrackCount: 0,
+          };
         }
-      }
-      document.addEventListener("click", function (e) {
-        closeAllLists(e.target);
-      });
-    }
-
-    // Compare Flow
-    compareBtn.addEventListener('click', compareArtists);
-
-    async function compareArtists() {
-      const artist1Name = artist1Input.value.trim();
-      const artist2Name = artist2Input.value.trim();
-      const startDateVal = startDateInput.value;
-      const endDateVal = endDateInput.value;
-
-      if (!artist1Name || !artist2Name || !startDateVal || !endDateVal) {
-        alert("Please fill in both artist names and a valid date range.");
-        return;
-      }
-      const startDate = new Date(startDateVal);
-      const endDate = new Date(endDateVal);
-      if (startDate > endDate) {
-        alert("The start date must be before the end date.");
-        return;
+        const totalPlays = filtered.length;
+        const totalMs = d3.sum(filtered, (d) => +d.ms_played || 0);
+        const trackAggregation = d3
+          .rollups(
+            filtered,
+            (v) => v.length,
+            (d) => d.master_metadata_track_name || "Unknown Track"
+          )
+          .sort((a, b) => d3.descending(a[1], b[1]));
+        const [topTrack, topCount] = trackAggregation[0] || ["N/A", 0];
+        return {
+          totalPlays,
+          totalMinutes: totalMs / 60000,
+          topTrack,
+          topTrackCount: topCount,
+        };
       }
 
-      try {
-        const allData = await d3.csv(csvUrl);
-
-        // Filter each artist's data
-        const dataArtist1 = filterDataForArtist(allData, artist1Name, startDate, endDate);
-        const dataArtist2 = filterDataForArtist(allData, artist2Name, startDate, endDate);
-
-        // Display aggregated table results
-        const artist1Agg = aggregateArtistData(dataArtist1);
-        const artist2Agg = aggregateArtistData(dataArtist2);
-        displayResults(artist1Agg, artist1Results);
-        displayResults(artist2Agg, artist2Results);
-
-        // Now draw the comparison chart
-        // drawComparisonChart(artist1Name, dataArtist1, artist2Name, dataArtist2, comparisonChartDiv);
-        drawComparisonChartStacked3(artist1Name, dataArtist1, artist2Name, dataArtist2, comparisonChartDiv);
-
-      } catch (error) {
-        console.error("Error loading or processing CSV data:", error);
-        alert("There was an error loading the data. See console for details.");
-      }
-    }
-
-    // Helper: filter data for a given artist and date range
-    function filterDataForArtist(data, artistName, startDate, endDate) {
-      return data.filter(d => {
-        const a = (d.master_metadata_album_artist_name || "").toLowerCase();
-        const matchArtist = a.includes(artistName.toLowerCase());
-        const tsDate = new Date(d.ts);
-        return matchArtist && tsDate >= startDate && tsDate <= endDate;
-      });
-    }
-
-    // Helper: Summaries for table (total plays, total minutes, top track)
-    function aggregateArtistData(filtered) {
-      if (!filtered.length) {
-        return { totalPlays: 0, totalMinutes: 0, topTrack: "N/A", topTrackCount: 0 };
-      }
-      const totalPlays = filtered.length;
-      const totalMs = d3.sum(filtered, d => +d.ms_played || 0);
-      const trackAggregation = d3.rollups(
-        filtered,
-        v => v.length,
-        d => d.master_metadata_track_name || "Unknown Track"
-      ).sort((a, b) => d3.descending(a[1], b[1]));
-      const [topTrack, topCount] = trackAggregation[0] || ["N/A", 0];
-      return {
-        totalPlays,
-        totalMinutes: totalMs / 60000,
-        topTrack,
-        topTrackCount: topCount
-      };
-    }
-
-    // Display aggregated results in table
-    function displayResults(artistData, container) {
-      if (!artistData || artistData.totalPlays === 0) {
-        container.innerHTML = `<p class="empty-message">No data found for this artist.</p>`;
-        return;
-      }
-      container.innerHTML = `
+      // Display aggregated results in table
+      function displayResults(artistData, container) {
+        if (!artistData || artistData.totalPlays === 0) {
+          container.innerHTML = `<p class="empty-message">No data found for this artist.</p>`;
+          return;
+        }
+        container.innerHTML = `
         <table>
           <tr><th>Total Plays</th><td>${artistData.totalPlays}</td></tr>
-          <tr><th>Total Listening Time</th><td>${(artistData.totalMinutes).toFixed(1)} min</td></tr>
-          <tr><th>Top Track</th><td>${artistData.topTrack} (${artistData.topTrackCount} plays)</td></tr>
+          <tr><th>Total Listening Time</th><td>${artistData.totalMinutes.toFixed(
+            1
+          )} min</td></tr>
+          <tr><th>Top Track</th><td>${artistData.topTrack} (${
+          artistData.topTrackCount
+        } plays)</td></tr>
         </table>`;
-    }
-
-    // === TIME-SERIES CHART ===
-    function drawComparisonChart(artist1Name, dataArtist1, artist2Name, dataArtist2, container) {
-      // Clear previous chart if any
-      container.innerHTML = "";
-
-      // Check if there's any data at all
-      if (!dataArtist1.length && !dataArtist2.length) {
-        container.innerHTML = `<p class="empty-message">No data to display for both artists in this period.</p>`;
-        return;
       }
 
-      // 1) Group each dataset by day, summing minutes
-      const dailyData1 = rollupByDay(dataArtist1);
-      const dailyData2 = rollupByDay(dataArtist2);
+      // === TIME-SERIES CHART ===
+      function drawComparisonChart(
+        artist1Name,
+        dataArtist1,
+        artist2Name,
+        dataArtist2,
+        container
+      ) {
+        // Clear previous chart if any
+        container.innerHTML = "";
 
-      // If both arrays are empty, show message
-      if (!dailyData1.length && !dailyData2.length) {
-        container.innerHTML = `<p class="empty-message">No daily data found for both artists in this period.</p>`;
-        return;
+        // Check if there's any data at all
+        if (!dataArtist1.length && !dataArtist2.length) {
+          container.innerHTML = `<p class="empty-message">No data to display for both artists in this period.</p>`;
+          return;
+        }
+
+        // 1) Group each dataset by day, summing minutes
+        const dailyData1 = rollupByDay(dataArtist1);
+        const dailyData2 = rollupByDay(dataArtist2);
+
+        // If both arrays are empty, show message
+        if (!dailyData1.length && !dailyData2.length) {
+          container.innerHTML = `<p class="empty-message">No daily data found for both artists in this period.</p>`;
+          return;
+        }
+
+        // 2) Set up dimensions
+        const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+        const width = 700,
+          height = 300;
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+
+        // 3) Create SVG
+        const svg = d3
+          .select(container)
+          .append("svg")
+          .attr("viewBox", `0 0 ${width} ${height}`)
+          .attr("preserveAspectRatio", "xMinYMid meet");
+
+        const g = svg
+          .append("g")
+          .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+        // 4) Define scales
+        // Determine x domain from min date to max date across both arrays
+        const allDates = [
+          ...dailyData1.map((d) => d.date),
+          ...dailyData2.map((d) => d.date),
+        ];
+        const xDomain = d3.extent(allDates);
+        const xScale = d3.scaleTime().domain(xDomain).range([0, chartWidth]);
+
+        // For y domain, from 0 to max minutes across both arrays
+        const allMinutes = [
+          ...dailyData1.map((d) => d.minutes),
+          ...dailyData2.map((d) => d.minutes),
+        ];
+        const yMax = d3.max(allMinutes) || 0;
+        const yScale = d3
+          .scaleLinear()
+          .domain([0, yMax])
+          .range([chartHeight, 0])
+          .nice();
+
+        // 5) Axes
+        const xAxis = d3
+          .axisBottom(xScale)
+          .ticks(6)
+          .tickFormat(d3.timeFormat("%b %d"));
+        const yAxis = d3
+          .axisLeft(yScale)
+          .ticks(5)
+          .tickFormat((d) => `${d.toFixed(0)} min`);
+
+        g.append("g")
+          .attr("class", "axis x-axis")
+          .attr("transform", `translate(0, ${chartHeight})`)
+          .call(xAxis);
+        g.append("g").attr("class", "axis y-axis").call(yAxis);
+
+        // 6) Line generator
+        const lineGen = d3
+          .line()
+          .x((d) => xScale(d.date))
+          .y((d) => yScale(d.minutes))
+          .curve(d3.curveMonotoneX);
+
+        // 7) Draw lines if we have data
+        // Artist 1 line
+        if (dailyData1.length) {
+          g.append("path")
+            .datum(dailyData1)
+            .attr("fill", "none")
+            .attr("stroke", "var(--primary-color)")
+            .attr("stroke-width", 2)
+            .attr("d", lineGen);
+        }
+        // Artist 2 line
+        if (dailyData2.length) {
+          g.append("path")
+            .datum(dailyData2)
+            .attr("fill", "none")
+            .attr("stroke", "var(--secondary-color)")
+            .attr("stroke-width", 2)
+            .attr("d", lineGen);
+        }
+
+        // 8) Optional legend
+        const legend = svg
+          .append("g")
+          .attr("class", "legend-container")
+          .attr("transform", `translate(${margin.left}, ${margin.top - 10})`);
+
+        let legendX = 0;
+        if (dailyData1.length) {
+          const item = legend
+            .append("g")
+            .attr("class", "legend-item")
+            .attr("transform", `translate(${legendX}, 0)`);
+          item.append("div");
+          item
+            .append("rect")
+            .attr("class", "legend-color-box")
+            .attr("x", 0)
+            .attr("y", -10)
+            .attr("width", 10)
+            .attr("height", 10)
+            .attr("fill", "var(--primary-color)");
+          item.append("text").attr("x", 15).attr("y", 0).text(artist1Name);
+          legendX += 100;
+        }
+        if (dailyData2.length) {
+          const item2 = legend
+            .append("g")
+            .attr("class", "legend-item")
+            .attr("transform", `translate(${legendX}, 0)`);
+          item2
+            .append("rect")
+            .attr("class", "legend-color-box")
+            .attr("x", 0)
+            .attr("y", -10)
+            .attr("width", 10)
+            .attr("height", 10)
+            .attr("fill", "var(--secondary-color)");
+          item2.append("text").attr("x", 15).attr("y", 0).text(artist2Name);
+        }
+
+        // (Optional) You could add circles/tooltip for each data point, etc.
+
+        // Helper to roll up by day => array of objects { date, minutes }
+        function rollupByDay(dataset) {
+          // Group by day
+          const rolled = d3.rollups(
+            dataset,
+            (v) => d3.sum(v, (d) => +d.ms_played || 0) / 60000, // sum ms_played => minutes
+            (d) => d3.timeDay.floor(new Date(d.ts))
+          );
+          // Convert to array of objects
+          const arr = rolled.map(([date, minutes]) => ({ date, minutes }));
+          // Sort by date
+          arr.sort((a, b) => a.date - b.date);
+          return arr;
+        }
       }
+      /**
+       * Draw a 100% Stacked Area Chart comparing two artists' daily proportions.
+       * @param {string} artist1Name - Name of first artist (for legend).
+       * @param {Object[]} dataArtist1 - Filtered array for Artist1 (each object has .ts, .ms_played).
+       * @param {string} artist2Name - Name of second artist (for legend).
+       * @param {Object[]} dataArtist2 - Filtered array for Artist2.
+       * @param {HTMLElement} container - DOM container to append the SVG.
+       */
+      function drawComparisonChartStacked(
+        artist1Name,
+        dataArtist1,
+        artist2Name,
+        dataArtist2,
+        container
+      ) {
+        // Clear previous chart
+        container.innerHTML = "";
 
-      // 2) Set up dimensions
-      const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-      const width = 700, height = 300;
-      const chartWidth = width - margin.left - margin.right;
-      const chartHeight = height - margin.top - margin.bottom;
+        // If no data at all, display a message
+        if (!dataArtist1.length && !dataArtist2.length) {
+          container.innerHTML = `<p class="empty-message">No data to display for both artists in this period.</p>`;
+          return;
+        }
 
-      // 3) Create SVG
-      const svg = d3.select(container)
-        .append("svg")
-        .attr("viewBox", `0 0 ${width} ${height}`)
-        .attr("preserveAspectRatio", "xMinYMid meet");
+        // 1) Aggregate data by day for each artist
+        const dailyArtist1 = aggregateByDay(dataArtist1); // => [{ date: Date, minutes: number }, ...]
+        const dailyArtist2 = aggregateByDay(dataArtist2);
 
-      const g = svg.append("g")
-        .attr("transform", `translate(${margin.left}, ${margin.top})`);
+        // If still empty, show a message
+        if (!dailyArtist1.length && !dailyArtist2.length) {
+          container.innerHTML = `<p class="empty-message">No daily data found for both artists.</p>`;
+          return;
+        }
 
-      // 4) Define scales
-      // Determine x domain from min date to max date across both arrays
-      const allDates = [...dailyData1.map(d => d.date), ...dailyData2.map(d => d.date)];
-      const xDomain = d3.extent(allDates);
-      const xScale = d3.scaleTime().domain(xDomain).range([0, chartWidth]);
+        // 2) Merge into one combined array with shape: { date, artist1, artist2 }
+        //    so we can pass it to the stack layout.
+        const combinedDaily = combineDailyData(dailyArtist1, dailyArtist2);
 
-      // For y domain, from 0 to max minutes across both arrays
-      const allMinutes = [...dailyData1.map(d => d.minutes), ...dailyData2.map(d => d.minutes)];
-      const yMax = d3.max(allMinutes) || 0;
-      const yScale = d3.scaleLinear().domain([0, yMax]).range([chartHeight, 0]).nice();
+        // 3) Setup chart dimensions
+        const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+        const width = 700,
+          height = 300;
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
 
-      // 5) Axes
-      const xAxis = d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %d"));
-      const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d => `${d.toFixed(0)} min`);
+        // 4) Create SVG
+        const svg = d3
+          .select(container)
+          .append("svg")
+          .attr("viewBox", `0 0 ${width} ${height}`)
+          .attr("preserveAspectRatio", "xMinYMid meet");
 
-      g.append("g")
-        .attr("class", "axis x-axis")
-        .attr("transform", `translate(0, ${chartHeight})`)
-        .call(xAxis);
-      g.append("g")
-        .attr("class", "axis y-axis")
-        .call(yAxis);
+        const g = svg
+          .append("g")
+          .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-      // 6) Line generator
-      const lineGen = d3.line()
-        .x(d => xScale(d.date))
-        .y(d => yScale(d.minutes))
-        .curve(d3.curveMonotoneX);
+        // 5) Build xScale from earliest to latest date
+        const xDomain = d3.extent(combinedDaily, (d) => d.date);
+        const xScale = d3.scaleTime().domain(xDomain).range([0, chartWidth]);
 
-      // 7) Draw lines if we have data
-      // Artist 1 line
-      if (dailyData1.length) {
-        g.append("path")
-          .datum(dailyData1)
-          .attr("fill", "none")
-          .attr("stroke", "var(--primary-color)")
-          .attr("stroke-width", 2)
-          .attr("d", lineGen);
-      }
-      // Artist 2 line
-      if (dailyData2.length) {
-        g.append("path")
-          .datum(dailyData2)
-          .attr("fill", "none")
-          .attr("stroke", "var(--secondary-color)")
-          .attr("stroke-width", 2)
-          .attr("d", lineGen);
-      }
+        // For a 100% stacked area, we typically do [0,1] for y
+        const yScale = d3.scaleLinear().domain([0, 1]).range([chartHeight, 0]);
 
-      // 8) Optional legend
-      const legend = svg.append("g")
-        .attr("class", "legend-container")
-        .attr("transform", `translate(${margin.left}, ${margin.top - 10})`);
+        // 6) Stacked data creation
+        //    We'll have two keys: "artist1" and "artist2"
+        const stack = d3
+          .stack()
+          .keys(["artist1", "artist2"])
+          .order(d3.stackOrderNone)
+          .offset(d3.stackOffsetExpand); // <== automatically converts to percentages
 
-      let legendX = 0;
-      if (dailyData1.length) {
-        const item = legend.append("g")
+        // Produce layered data
+        const series = stack(combinedDaily);
+        // series is an array of layers:
+        //   series[0] => array of points for artist1,
+        //   series[1] => for artist2,
+        // each point is [startPercentage, endPercentage].
+
+        // 7) Axes
+        const xAxis = d3
+          .axisBottom(xScale)
+          .ticks(6)
+          .tickFormat(d3.timeFormat("%b %Y"));
+        const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%"));
+
+        g.append("g")
+          .attr("class", "x-axis")
+          .attr("transform", `translate(0, ${chartHeight})`)
+          .call(xAxis);
+        g.append("g").attr("class", "y-axis").call(yAxis);
+
+        // 8) Area generator
+        const area = d3
+          .area()
+          .x((d) => xScale(d.data.date))
+          .y0((d) => yScale(d[0]))
+          .y1((d) => yScale(d[1]))
+          .curve(d3.curveBasis);
+
+        // 9) For each layer, draw the area
+        // We'll define two colors for the two layers
+        // You can also store them in an object { artist1: colorA, artist2: colorB }
+        const colorScale = d3
+          .scaleOrdinal()
+          .domain(["artist1", "artist2"])
+          .range(["#1DB954", "#6f42c1"]); // e.g. green for #1, purple for #2
+
+        g.selectAll(".layer")
+          .data(series)
+          .join("path")
+          .attr("class", "layer")
+          .attr("fill", (d) => colorScale(d.key))
+          .attr("d", area);
+
+        // 10) Add a small legend
+        const legend = svg
+          .append("g")
+          .attr("class", "legend-container")
+          .attr("transform", `translate(${margin.left}, ${margin.top - 10})`);
+
+        // Create an array for the legend
+        const legendData = [
+          { key: "artist1", name: artist1Name },
+          { key: "artist2", name: artist2Name },
+        ];
+
+        let legendX = 0;
+        legend
+          .selectAll(".legend-item")
+          .data(legendData)
+          .join("g")
           .attr("class", "legend-item")
-          .attr("transform", `translate(${legendX}, 0)`);
-        item.append("div");
-        item.append("rect")
-          .attr("class", "legend-color-box")
-          .attr("x", 0)
-          .attr("y", -10)
-          .attr("width", 10)
-          .attr("height", 10)
-          .attr("fill", "var(--primary-color)");
-        item.append("text")
-          .attr("x", 15)
-          .attr("y", 0)
-          .text(artist1Name);
-        legendX += 100;
+          .attr("transform", (d, i) => {
+            const xPos = legendX;
+            legendX += 110; // spacing
+            return `translate(${xPos}, 0)`;
+          })
+          .call((gEl) => {
+            gEl
+              .append("rect")
+              .attr("width", 12)
+              .attr("height", 12)
+              .attr("y", -10)
+              .attr("fill", (d) => colorScale(d.key));
+            gEl
+              .append("text")
+              .attr("x", 18)
+              .attr("y", 0)
+              .attr("dy", "-1px")
+              .style("font-size", "0.8rem")
+              .text((d) => d.name);
+          });
+
+        // === Helper Functions ===
+
+        /**
+         * Roll up data by day => returns array of { date: Date, minutes: number }
+         */
+        function aggregateByDay(dataset) {
+          if (!dataset || !dataset.length) return [];
+          const rolled = d3.rollups(
+            dataset,
+            (v) => d3.sum(v, (d) => +d.ms_played || 0) / 60000, // total minutes
+            (d) => d3.timeDay.floor(new Date(d.ts))
+          );
+          // Convert to array of objects
+          const arr = rolled.map(([date, minutes]) => ({ date, minutes }));
+          // Sort by date
+          arr.sort((a, b) => a.date - b.date);
+          return arr;
+        }
+
+        /**
+         * Merge two daily arrays so that each day has data for artist1 & artist2
+         * Returns an array of { date, artist1, artist2 }
+         */
+        function combineDailyData(daily1, daily2) {
+          // Index them by date (ms integer)
+          const map1 = new Map(daily1.map((d) => [+d.date, d.minutes]));
+          const map2 = new Map(daily2.map((d) => [+d.date, d.minutes]));
+
+          // Combine all unique days
+          const allDates = new Set([...map1.keys(), ...map2.keys()]);
+          const combined = [];
+          for (let msDate of allDates) {
+            const date = new Date(msDate);
+            const artist1Val = map1.get(msDate) || 0;
+            const artist2Val = map2.get(msDate) || 0;
+            combined.push({
+              date: date,
+              artist1: artist1Val,
+              artist2: artist2Val,
+            });
+          }
+          // Sort by date
+          combined.sort((a, b) => a.date - b.date);
+          return combined;
+        }
       }
-      if (dailyData2.length) {
-        const item2 = legend.append("g")
+
+      /**
+       * Draw a 100% Stacked Area Chart comparing two artists' daily proportions.
+       * When neither artist is listened to on a given day, it forces a 50/50 split.
+       * @param {string} artist1Name - Name of first artist (for legend).
+       * @param {Object[]} dataArtist1 - Filtered array for Artist1 (each object has .ts, .ms_played).
+       * @param {string} artist2Name - Name of second artist (for legend).
+       * @param {Object[]} dataArtist2 - Filtered array for Artist2.
+       * @param {HTMLElement} container - DOM container to append the SVG.
+       */
+      function drawComparisonChartStacked3(
+        artist1Name,
+        dataArtist1,
+        artist2Name,
+        dataArtist2,
+        container
+      ) {
+        // Clear previous chart
+        container.innerHTML = "";
+
+        // If no data at all, display a message
+        if (!dataArtist1.length && !dataArtist2.length) {
+          container.innerHTML = `<p class="empty-message">No data to display for both artists in this period.</p>`;
+          return;
+        }
+
+        // 1) Aggregate data by day for each artist
+        const dailyArtist1 = aggregateByDay(dataArtist1); // e.g. [{ date: Date, minutes: number }, ... ]
+        const dailyArtist2 = aggregateByDay(dataArtist2);
+
+        // If still empty, show a message
+        if (!dailyArtist1.length && !dailyArtist2.length) {
+          container.innerHTML = `<p class="empty-message">No daily data found for both artists.</p>`;
+          return;
+        }
+
+        // 2) Merge into one combined array with shape: { date, artist1, artist2 }
+        //    so we can pass it to the stack layout. For days with 0 for both, use a 50/50 split.
+        const combinedDaily = combineDailyData(dailyArtist1, dailyArtist2);
+
+        // 3) Setup chart dimensions
+        const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+        const width = 700,
+          height = 300;
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+
+        // 4) Create SVG
+        const svg = d3
+          .select(container)
+          .append("svg")
+          .attr("viewBox", `0 0 ${width} ${height}`)
+          .attr("preserveAspectRatio", "xMinYMid meet");
+
+        const g = svg
+          .append("g")
+          .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+        // 5) Build xScale from earliest to latest date
+        const xDomain = d3.extent(combinedDaily, (d) => d.date);
+        const xScale = d3.scaleTime().domain(xDomain).range([0, chartWidth]);
+
+        // For a 100% stacked area, we use [0,1] for the y scale.
+        const yScale = d3.scaleLinear().domain([0, 1]).range([chartHeight, 0]);
+
+        // 6) Stacked data creation using keys "artist1" and "artist2"
+        const stack = d3
+          .stack()
+          .keys(["artist1", "artist2"])
+          .order(d3.stackOrderNone)
+          .offset(d3.stackOffsetExpand); // Converts to percentages
+
+        const series = stack(combinedDaily);
+
+        // 7) Axes
+        const xAxis = d3
+          .axisBottom(xScale)
+          .ticks(6)
+          .tickFormat(d3.timeFormat("%b %Y"));
+        const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%"));
+
+        g.append("g")
+          .attr("class", "x-axis")
+          .attr("transform", `translate(0, ${chartHeight})`)
+          .call(xAxis);
+        g.append("g").attr("class", "y-axis").call(yAxis);
+
+        // 8) Area generator
+        const area = d3
+          .area()
+          .x((d) => xScale(d.data.date))
+          .y0((d) => yScale(d[0]))
+          .y1((d) => yScale(d[1]))
+          .curve(d3.curveBasis);
+
+        // 9) For each layer, draw the area with designated colors
+        const colorScale = d3
+          .scaleOrdinal()
+          .domain(["artist1", "artist2"])
+          .range(["#1DB954", "#6f42c1"]);
+
+        g.selectAll(".layer")
+          .data(series)
+          .join("path")
+          .attr("class", "layer")
+          .attr("fill", (d) => colorScale(d.key))
+          .attr("d", area);
+
+        // 10) Add a small legend
+        const legend = svg
+          .append("g")
+          .attr("class", "legend-container")
+          .attr("transform", `translate(${margin.left}, ${margin.top - 10})`);
+
+        const legendData = [
+          { key: "artist1", name: artist1Name },
+          { key: "artist2", name: artist2Name },
+        ];
+
+        let legendX = 0;
+        legend
+          .selectAll(".legend-item")
+          .data(legendData)
+          .join("g")
           .attr("class", "legend-item")
-          .attr("transform", `translate(${legendX}, 0)`);
-        item2.append("rect")
-          .attr("class", "legend-color-box")
-          .attr("x", 0)
-          .attr("y", -10)
-          .attr("width", 10)
-          .attr("height", 10)
-          .attr("fill", "var(--secondary-color)");
-        item2.append("text")
-          .attr("x", 15)
-          .attr("y", 0)
-          .text(artist2Name);
+          .attr("transform", (d, i) => {
+            const xPos = legendX;
+            legendX += 110; // spacing
+            return `translate(${xPos}, 0)`;
+          })
+          .call((gEl) => {
+            gEl
+              .append("rect")
+              .attr("width", 12)
+              .attr("height", 12)
+              .attr("y", -10)
+              .attr("fill", (d) => colorScale(d.key));
+            gEl
+              .append("text")
+              .attr("x", 18)
+              .attr("y", 0)
+              .attr("dy", "-1px")
+              .style("font-size", "0.8rem")
+              .text((d) => d.name);
+          });
+
+        // --- Helper Functions ---
+
+        function aggregateByDay(dataset) {
+          if (!dataset || !dataset.length) return [];
+          const rolled = d3.rollups(
+            dataset,
+            (v) => d3.sum(v, (d) => +d.ms_played || 0) / 60000,
+            (d) => d3.timeDay.floor(new Date(d.ts))
+          );
+          const arr = rolled.map(([date, minutes]) => ({ date, minutes }));
+          arr.sort((a, b) => a.date - b.date);
+          return arr;
+        }
+
+        // Updated combineDailyData function (see above)
+        function combineDailyData(daily1, daily2) {
+          const map1 = new Map(daily1.map((d) => [+d.date, d.minutes]));
+          const map2 = new Map(daily2.map((d) => [+d.date, d.minutes]));
+          const allDates = new Set([...map1.keys(), ...map2.keys()]);
+          const combined = [];
+          for (let msDate of allDates) {
+            const date = new Date(msDate);
+            const artist1Val = map1.get(msDate) || 0;
+            const artist2Val = map2.get(msDate) || 0;
+            if (artist1Val + artist2Val === 0) {
+              combined.push({ date: date, artist1: 0.5, artist2: 0.5 });
+            } else {
+              combined.push({
+                date: date,
+                artist1: artist1Val,
+                artist2: artist2Val,
+              });
+            }
+          }
+          combined.sort((a, b) => a.date - b.date);
+          return combined;
+        }
+      }
+    </script>
+
+    <script>
+      function loadComponent(url, placeholderId) {
+        fetch(url)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+          })
+          .then((data) => {
+            const placeholder = document.getElementById(placeholderId);
+            if (placeholder) {
+              placeholder.innerHTML = data;
+            } else {
+              console.warn(
+                `Placeholder element with ID '${placeholderId}' not found.`
+              );
+            }
+          })
+          .catch((error) =>
+            console.error(`Error loading component ${url}:`, error)
+          );
       }
 
-      // (Optional) You could add circles/tooltip for each data point, etc.  
-
-      // Helper to roll up by day => array of objects { date, minutes }
-      function rollupByDay(dataset) {
-        // Group by day
-        const rolled = d3.rollups(
-          dataset,
-          v => d3.sum(v, d => +d.ms_played || 0) / 60000, // sum ms_played => minutes
-          d => d3.timeDay.floor(new Date(d.ts))
-        );
-        // Convert to array of objects
-        const arr = rolled.map(([date, minutes]) => ({ date, minutes }));
-        // Sort by date
-        arr.sort((a,b) => a.date - b.date);
-        return arr;
-      }
-    }
-    /**
- * Draw a 100% Stacked Area Chart comparing two artists' daily proportions.
- * @param {string} artist1Name - Name of first artist (for legend).
- * @param {Object[]} dataArtist1 - Filtered array for Artist1 (each object has .ts, .ms_played).
- * @param {string} artist2Name - Name of second artist (for legend).
- * @param {Object[]} dataArtist2 - Filtered array for Artist2.
- * @param {HTMLElement} container - DOM container to append the SVG.
- */
-function drawComparisonChartStacked(artist1Name, dataArtist1, artist2Name, dataArtist2, container) {
-  // Clear previous chart
-  container.innerHTML = "";
-
-  // If no data at all, display a message
-  if (!dataArtist1.length && !dataArtist2.length) {
-    container.innerHTML = `<p class="empty-message">No data to display for both artists in this period.</p>`;
-    return;
-  }
-
-  // 1) Aggregate data by day for each artist
-  const dailyArtist1 = aggregateByDay(dataArtist1); // => [{ date: Date, minutes: number }, ...]
-  const dailyArtist2 = aggregateByDay(dataArtist2);
-
-  // If still empty, show a message
-  if (!dailyArtist1.length && !dailyArtist2.length) {
-    container.innerHTML = `<p class="empty-message">No daily data found for both artists.</p>`;
-    return;
-  }
-
-  // 2) Merge into one combined array with shape: { date, artist1, artist2 }
-  //    so we can pass it to the stack layout.
-  const combinedDaily = combineDailyData(dailyArtist1, dailyArtist2);
-
-  // 3) Setup chart dimensions
-  const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-  const width = 700, height = 300;
-  const chartWidth = width - margin.left - margin.right;
-  const chartHeight = height - margin.top - margin.bottom;
-
-  // 4) Create SVG
-  const svg = d3.select(container)
-    .append("svg")
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("preserveAspectRatio", "xMinYMid meet");
-
-  const g = svg.append("g")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-  // 5) Build xScale from earliest to latest date
-  const xDomain = d3.extent(combinedDaily, d => d.date);
-  const xScale = d3.scaleTime()
-    .domain(xDomain)
-    .range([0, chartWidth]);
-
-  // For a 100% stacked area, we typically do [0,1] for y
-  const yScale = d3.scaleLinear()
-    .domain([0, 1])
-    .range([chartHeight, 0]);
-
-  // 6) Stacked data creation
-  //    We'll have two keys: "artist1" and "artist2"
-  const stack = d3.stack()
-    .keys(["artist1", "artist2"])
-    .order(d3.stackOrderNone)
-    .offset(d3.stackOffsetExpand); // <== automatically converts to percentages
-
-  // Produce layered data
-  const series = stack(combinedDaily); 
-  // series is an array of layers: 
-  //   series[0] => array of points for artist1, 
-  //   series[1] => for artist2,
-  // each point is [startPercentage, endPercentage].
-
-  // 7) Axes
-  const xAxis = d3.axisBottom(xScale)
-    .ticks(6)
-    .tickFormat(d3.timeFormat("%b %Y")); 
-  const yAxis = d3.axisLeft(yScale)
-    .ticks(5)
-    .tickFormat(d3.format(".0%"));
-
-  g.append("g")
-    .attr("class", "x-axis")
-    .attr("transform", `translate(0, ${chartHeight})`)
-    .call(xAxis);
-  g.append("g")
-    .attr("class", "y-axis")
-    .call(yAxis);
-
-  // 8) Area generator
-  const area = d3.area()
-    .x(d => xScale(d.data.date))
-    .y0(d => yScale(d[0]))
-    .y1(d => yScale(d[1]))
-    .curve(d3.curveBasis);
-
-  // 9) For each layer, draw the area
-  // We'll define two colors for the two layers
-  // You can also store them in an object { artist1: colorA, artist2: colorB }
-  const colorScale = d3.scaleOrdinal()
-    .domain(["artist1", "artist2"])
-    .range(["#1DB954", "#6f42c1"]); // e.g. green for #1, purple for #2
-
-  g.selectAll(".layer")
-    .data(series)
-    .join("path")
-      .attr("class", "layer")
-      .attr("fill", d => colorScale(d.key))
-      .attr("d", area);
-
-  // 10) Add a small legend
-  const legend = svg.append("g")
-    .attr("class", "legend-container")
-    .attr("transform", `translate(${margin.left}, ${margin.top - 10})`);
-
-  // Create an array for the legend
-  const legendData = [
-    { key: "artist1", name: artist1Name },
-    { key: "artist2", name: artist2Name }
-  ];
-
-  let legendX = 0;
-  legend.selectAll(".legend-item")
-    .data(legendData)
-    .join("g")
-      .attr("class", "legend-item")
-      .attr("transform", (d, i) => {
-        const xPos = legendX;
-        legendX += 110; // spacing
-        return `translate(${xPos}, 0)`;
-      })
-    .call(gEl => {
-      gEl.append("rect")
-        .attr("width", 12)
-        .attr("height", 12)
-        .attr("y", -10)
-        .attr("fill", d => colorScale(d.key));
-      gEl.append("text")
-        .attr("x", 18)
-        .attr("y", 0)
-        .attr("dy", "-1px")
-        .style("font-size", "0.8rem")
-        .text(d => d.name);
-    });
-
-
-  // === Helper Functions ===
-
-  /**
-   * Roll up data by day => returns array of { date: Date, minutes: number }
-   */
-  function aggregateByDay(dataset) {
-    if (!dataset || !dataset.length) return [];
-    const rolled = d3.rollups(
-      dataset,
-      v => d3.sum(v, d => +d.ms_played || 0) / 60000, // total minutes
-      d => d3.timeDay.floor(new Date(d.ts))
-    );
-    // Convert to array of objects
-    const arr = rolled.map(([date, minutes]) => ({ date, minutes }));
-    // Sort by date
-    arr.sort((a, b) => a.date - b.date);
-    return arr;
-  }
-
-  /**
-   * Merge two daily arrays so that each day has data for artist1 & artist2
-   * Returns an array of { date, artist1, artist2 }
-   */
-  function combineDailyData(daily1, daily2) {
-    // Index them by date (ms integer)
-    const map1 = new Map(daily1.map(d => [+d.date, d.minutes]));
-    const map2 = new Map(daily2.map(d => [+d.date, d.minutes]));
-
-    // Combine all unique days
-    const allDates = new Set([...map1.keys(), ...map2.keys()]);
-    const combined = [];
-    for (let msDate of allDates) {
-      const date = new Date(msDate);
-      const artist1Val = map1.get(msDate) || 0;
-      const artist2Val = map2.get(msDate) || 0;
-      combined.push({
-        date: date,
-        artist1: artist1Val,
-        artist2: artist2Val
+      document.addEventListener("DOMContentLoaded", () => {
+        loadComponent("header.html", "header-placeholder");
+        loadComponent("footer.html", "footer-placeholder");
       });
-    }
-    // Sort by date
-    combined.sort((a, b) => a.date - b.date);
-    return combined;
-  }
-
-  
-}
-
-/**
- * Draw a 100% Stacked Area Chart comparing two artists' daily proportions.
- * When neither artist is listened to on a given day, it forces a 50/50 split.
- * @param {string} artist1Name - Name of first artist (for legend).
- * @param {Object[]} dataArtist1 - Filtered array for Artist1 (each object has .ts, .ms_played).
- * @param {string} artist2Name - Name of second artist (for legend).
- * @param {Object[]} dataArtist2 - Filtered array for Artist2.
- * @param {HTMLElement} container - DOM container to append the SVG.
- */
- function drawComparisonChartStacked3(artist1Name, dataArtist1, artist2Name, dataArtist2, container) {
-  // Clear previous chart
-  container.innerHTML = "";
-
-  // If no data at all, display a message
-  if (!dataArtist1.length && !dataArtist2.length) {
-    container.innerHTML = `<p class="empty-message">No data to display for both artists in this period.</p>`;
-    return;
-  }
-
-  // 1) Aggregate data by day for each artist
-  const dailyArtist1 = aggregateByDay(dataArtist1); // e.g. [{ date: Date, minutes: number }, ... ]
-  const dailyArtist2 = aggregateByDay(dataArtist2);
-
-  // If still empty, show a message
-  if (!dailyArtist1.length && !dailyArtist2.length) {
-    container.innerHTML = `<p class="empty-message">No daily data found for both artists.</p>`;
-    return;
-  }
-
-  // 2) Merge into one combined array with shape: { date, artist1, artist2 }
-  //    so we can pass it to the stack layout. For days with 0 for both, use a 50/50 split.
-  const combinedDaily = combineDailyData(dailyArtist1, dailyArtist2);
-
-  // 3) Setup chart dimensions
-  const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-  const width = 700, height = 300;
-  const chartWidth = width - margin.left - margin.right;
-  const chartHeight = height - margin.top - margin.bottom;
-
-  // 4) Create SVG
-  const svg = d3.select(container)
-    .append("svg")
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("preserveAspectRatio", "xMinYMid meet");
-
-  const g = svg.append("g")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-  // 5) Build xScale from earliest to latest date
-  const xDomain = d3.extent(combinedDaily, d => d.date);
-  const xScale = d3.scaleTime()
-    .domain(xDomain)
-    .range([0, chartWidth]);
-
-  // For a 100% stacked area, we use [0,1] for the y scale.
-  const yScale = d3.scaleLinear()
-    .domain([0, 1])
-    .range([chartHeight, 0]);
-
-  // 6) Stacked data creation using keys "artist1" and "artist2"
-  const stack = d3.stack()
-    .keys(["artist1", "artist2"])
-    .order(d3.stackOrderNone)
-    .offset(d3.stackOffsetExpand); // Converts to percentages
-
-  const series = stack(combinedDaily);
-
-  // 7) Axes
-  const xAxis = d3.axisBottom(xScale)
-    .ticks(6)
-    .tickFormat(d3.timeFormat("%b %Y"));
-  const yAxis = d3.axisLeft(yScale)
-    .ticks(5)
-    .tickFormat(d3.format(".0%"));
-
-  g.append("g")
-    .attr("class", "x-axis")
-    .attr("transform", `translate(0, ${chartHeight})`)
-    .call(xAxis);
-  g.append("g")
-    .attr("class", "y-axis")
-    .call(yAxis);
-
-  // 8) Area generator
-  const area = d3.area()
-    .x(d => xScale(d.data.date))
-    .y0(d => yScale(d[0]))
-    .y1(d => yScale(d[1]))
-    .curve(d3.curveBasis);
-
-  // 9) For each layer, draw the area with designated colors
-  const colorScale = d3.scaleOrdinal()
-    .domain(["artist1", "artist2"])
-    .range(["#1DB954", "#6f42c1"]);
-
-  g.selectAll(".layer")
-    .data(series)
-    .join("path")
-      .attr("class", "layer")
-      .attr("fill", d => colorScale(d.key))
-      .attr("d", area);
-
-  // 10) Add a small legend
-  const legend = svg.append("g")
-    .attr("class", "legend-container")
-    .attr("transform", `translate(${margin.left}, ${margin.top - 10})`);
-
-  const legendData = [
-    { key: "artist1", name: artist1Name },
-    { key: "artist2", name: artist2Name }
-  ];
-
-  let legendX = 0;
-  legend.selectAll(".legend-item")
-    .data(legendData)
-    .join("g")
-      .attr("class", "legend-item")
-      .attr("transform", (d, i) => {
-        const xPos = legendX;
-        legendX += 110; // spacing
-        return `translate(${xPos}, 0)`;
-      })
-    .call(gEl => {
-      gEl.append("rect")
-        .attr("width", 12)
-        .attr("height", 12)
-        .attr("y", -10)
-        .attr("fill", d => colorScale(d.key));
-      gEl.append("text")
-        .attr("x", 18)
-        .attr("y", 0)
-        .attr("dy", "-1px")
-        .style("font-size", "0.8rem")
-        .text(d => d.name);
-    });
-
-  // --- Helper Functions ---
-
-  function aggregateByDay(dataset) {
-    if (!dataset || !dataset.length) return [];
-    const rolled = d3.rollups(
-      dataset,
-      v => d3.sum(v, d => +d.ms_played || 0) / 60000,
-      d => d3.timeDay.floor(new Date(d.ts))
-    );
-    const arr = rolled.map(([date, minutes]) => ({ date, minutes }));
-    arr.sort((a, b) => a.date - b.date);
-    return arr;
-  }
-
-  // Updated combineDailyData function (see above)
-  function combineDailyData(daily1, daily2) {
-    const map1 = new Map(daily1.map(d => [+d.date, d.minutes]));
-    const map2 = new Map(daily2.map(d => [+d.date, d.minutes]));
-    const allDates = new Set([...map1.keys(), ...map2.keys()]);
-    const combined = [];
-    for (let msDate of allDates) {
-      const date = new Date(msDate);
-      const artist1Val = map1.get(msDate) || 0;
-      const artist2Val = map2.get(msDate) || 0;
-      if (artist1Val + artist2Val === 0) {
-        combined.push({ date: date, artist1: 0.5, artist2: 0.5 });
-      } else {
-        combined.push({ date: date, artist1: artist1Val, artist2: artist2Val });
-      }
-    }
-    combined.sort((a, b) => a.date - b.date);
-    return combined;
-  }
-}
-
-
-  </script>
-</body>
+    </script>
+  </body>
 </html>
