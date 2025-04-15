@@ -18,18 +18,8 @@
   </head>
   <body>
     <div class="layout">
-      <header class="header">
-        <img src="img/Logo.png" class="header_logo" alt="Logo" />
-        <nav class="header_nav">
-          <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/top_things">Top Things</a></li>
-            <li><a href="compareArtists.html">Compare</a></li>
-            <li><a href="dive_deeper.html">Dive Deeper</a></li>
-          </ul>
-        </nav>
-        <button class="button"><a>Login</a></button>
-      </header>
+      <!-- Header Placeholder -->
+      <div id="header-placeholder"></div>
 
       <main class="main">
         <section class="info">
@@ -52,75 +42,79 @@
         </section>
 
         <section id="wrapped-section">
-          <h1>Spotify Listening Dashboard2</h1>
+          <h1>Spotify Listening Dashboard</h1> 
           <div id="include-wrapped"></div>
         </section>
-
-        <!-- <h1>Spotify Listening Dashboard</h1> -->
-
-        <!-- <script>
-          fetch("wrapped_page.html")
-            .then((response) => response.text())
-            .then((html) => {
-              // Extract the content inside <main>...</main>
-              const wrappedContent = new DOMParser()
-                .parseFromString(html, "text/html")
-                .querySelector("main");
-              if (wrappedContent) {
-                document.getElementById("include-wrapped").innerHTML = wrappedContent.innerHTML;
-              }
-            });
-        </script>
-         -->
 
         <!-- Tooltip Div -->
         <div id="tooltip"></div>
       </main>
 
-      <footer class="footer">
-        <img src="img/Logo.png" class="footer_logo" alt="Logo" />
-        <nav class="footer_nav">
-          <ul>
-            <li><a href="/about">About</a></li>
-            <li><a href="/contact">Contact</a></li>
-            <li><a href="/privacy">Privacy</a></li>
-          </ul>
-        </nav>
-        <p class="footer_text">© 2025 YourSiteName</p>
-      </footer>
-    </div>
+      <!-- Footer Placeholder -->
+      <div id="footer-placeholder"></div>
 
-    <!-- Link to the external JavaScript file (defer ensures HTML is parsed first) -->
-    <!-- <script src="scripts/spotifyDashboard.js" type="module" defer></script> -->
+    </div> 
 
+    <!-- Scripts to load included content -->
     <script>
-      fetch("index_overview.html")
+      fetch("index_overview.html") 
         .then((response) => response.text())
         .then((data) => {
-          document.getElementById("include-overview").innerHTML = data;
+          const overviewContainer = document.getElementById("include-overview");
+          if (overviewContainer) {
+              overviewContainer.innerHTML = data;
+              const script = document.createElement("script");
+              script.src = "scripts/get_overview.js";
+              setTimeout(() => document.body.appendChild(script), 0);
+          }
+        })
+        .catch(error => console.error('Error loading overview:', error));
 
-          // Dynamically load and execute the script
-          const script = document.createElement("script");
-          script.src = "scripts/get_overview.js";
-          document.body.appendChild(script);
-        });
-    </script>
-    <script>
       fetch("wrapped_page.html")
         .then((response) => response.text())
         .then((html) => {
-          const wrapped = new DOMParser().parseFromString(html, "text/html");
-          const wrappedMain = wrapped.querySelector("main");
-          if (wrappedMain) {
-            document.getElementById("include-wrapped").innerHTML = wrappedMain.innerHTML;
-    
-            // Dynamically load the dashboard script AFTER content is inserted
-            const script = document.createElement("script");
-            script.src = "scripts/spotifyDashboard.js";
-            script.type = "module";
-            document.body.appendChild(script);
+          const wrappedContainer = document.getElementById("include-wrapped");
+          if (wrappedContainer) {
+              const wrapped = new DOMParser().parseFromString(html, "text/html");
+              const wrappedMain = wrapped.querySelector("main"); 
+              if (wrappedMain) {
+                wrappedContainer.innerHTML = wrappedMain.innerHTML;
+                const script = document.createElement("script");
+                script.src = "scripts/spotifyDashboard.js";
+                script.type = "module";
+                setTimeout(() => document.body.appendChild(script), 0);
+              }
           }
-        });
+        })
+        .catch(error => console.error('Error loading wrapped page:', error));
+    </script>
+
+    <!-- Script to load Header and Footer -->
+    <script>
+      function loadComponent(url, placeholderId) {
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+          })
+          .then(data => {
+            const placeholder = document.getElementById(placeholderId);
+            if (placeholder) {
+              placeholder.innerHTML = data;
+            } else {
+              console.warn(`Placeholder element with ID '${placeholderId}' not found.`);
+            }
+          })
+          .catch(error => console.error(`Error loading component ${url}:`, error));
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+         loadComponent('header.html', 'header-placeholder');
+         loadComponent('footer.html', 'footer-placeholder');
+
+      });
     </script>
 
   </body>
