@@ -22,19 +22,8 @@
         --border-radius: 8px;
         --transition-speed: 0.3s;
       }
-      body {
-        font-family: sans-serif;
-        background-color: var(--background-color);
-        color: var(--text-color);
-        margin: 0;
-        padding: 1rem 2rem;
-      }
-      h1 {
-        text-align: center;
-        margin-bottom: 1rem;
-      }
       .controls {
-        max-width: 800px;
+        width: 85%;
         margin: 0 auto 2rem;
         padding: 1rem;
         background-color: var(--card-bg);
@@ -71,17 +60,17 @@
         background-color: #0b5ed7;
       }
       .results-container {
-        max-width: 800px;
+        width: 85%;
         margin: 0 auto;
         display: flex;
-        gap: 2rem;
-        margin-bottom: 2rem; /* Add spacing before chart */
+        gap: var(--spacing);
+        margin-bottom: var(--spacing); /* Add spacing before chart */
       }
       .artist-card {
         flex: 1;
         background-color: var(--card-bg);
         border-radius: var(--border-radius);
-        padding: 1rem;
+        padding: calc(var(--spacing)/2);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
       .artist-card h2 {
@@ -90,7 +79,7 @@
       table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 1rem;
+        margin-top: calc(var(--spacing)/2);
       }
       table th,
       table td {
@@ -129,7 +118,7 @@
       }
       /* Chart Container */
       .chart-container {
-        max-width: 800px;
+        width: 85%;
         margin: 0 auto;
         background-color: var(--card-bg);
         border-radius: var(--border-radius);
@@ -168,66 +157,71 @@
     </style>
   </head>
   <body>
-    <div id="header-placeholder"></div>
+    <div class="layout">
+      <div id="header-placeholder"></div>
 
-    <!-- <h1>Spotify Listening Dashboard blabla</h1> -->
+      <!-- <h1>Spotify Listening Dashboard blabla</h1> -->
+      <main class="main">
+        <h1>Compare Two Artists</h1>
 
-    <h1>Compare Two Artists</h1>
+        <!-- Search and filter controls -->
+        <div class="controls">
+          <div>
+            <label for="artist1">Artist 1:</label>
+            <input
+              type="text"
+              id="artist1"
+              placeholder="Enter first artist name"
+              autocomplete="off"
+            />
+          </div>
+          <div>
+            <label for="artist2">Artist 2:</label>
+            <input
+              type="text"
+              id="artist2"
+              placeholder="Enter second artist name"
+              autocomplete="off"
+            />
+          </div>
+          <div>
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" />
+          </div>
+          <div>
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" />
+          </div>
+          <div>
+            <button id="compareBtn">Compare</button>
+          </div>
+        </div>
 
-    <!-- Search and filter controls -->
-    <div class="controls">
-      <div>
-        <label for="artist1">Artist 1:</label>
-        <input
-          type="text"
-          id="artist1"
-          placeholder="Enter first artist name"
-          autocomplete="off"
-        />
-      </div>
-      <div>
-        <label for="artist2">Artist 2:</label>
-        <input
-          type="text"
-          id="artist2"
-          placeholder="Enter second artist name"
-          autocomplete="off"
-        />
-      </div>
-      <div>
-        <label for="startDate">Start Date:</label>
-        <input type="date" id="startDate" />
-      </div>
-      <div>
-        <label for="endDate">End Date:</label>
-        <input type="date" id="endDate" />
-      </div>
-      <div>
-        <button id="compareBtn">Compare</button>
-      </div>
-    </div>
+        <!-- Results Container -->
+        <div class="results-container">
+          <div id="artist1-results" class="artist-card">
+            <h2>Artist 1 Data</h2>
+            <div class="content"></div>
+          </div>
+          <div id="artist2-results" class="artist-card">
+            <h2>Artist 2 Data</h2>
+            <div class="content"></div>
+          </div>
+        </div>
 
-    <!-- Results Container -->
-    <div class="results-container">
-      <div id="artist1-results" class="artist-card">
-        <h2>Artist 1 Data</h2>
-        <div class="content"></div>
-      </div>
-      <div id="artist2-results" class="artist-card">
-        <h2>Artist 2 Data</h2>
-        <div class="content"></div>
-      </div>
-    </div>
+        <!-- Chart Container -->
+        <div id="comparison-chart-container" class="chart-container">
+          <h2>Listening Time Comparison Over Time</h2>
+          <div id="comparison-chart"></div>
+        </div>
+      </main>
 
-    <!-- Chart Container -->
-    <div id="comparison-chart-container" class="chart-container">
-      <h2>Listening Time Comparison Over Time</h2>
-      <div id="comparison-chart"></div>
+      <div id="footer-placeholder"></div>
     </div>
 
     <script>
       // Configuration
-      const csvUrl = "data/spotify_listening_history.csv"; // Update this path if needed
+      const csvUrl = "data/astrid_data.csv"; // Update this path if needed
 
       // Access DOM Elements
       const artist1Input = document.getElementById("artist1");
@@ -1030,10 +1024,9 @@
           );
       }
 
-      document.addEventListener("DOMContentLoaded", () => {
-        loadComponent("header.html", "header-placeholder");
-        loadComponent("footer.html", "footer-placeholder");
-      });
+      // Call the component loaders immediately
+      loadComponent("header.html", "header-placeholder");
+      loadComponent("footer.html", "footer-placeholder");
     </script>
   </body>
 </html>
