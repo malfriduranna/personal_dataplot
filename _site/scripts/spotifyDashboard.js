@@ -441,29 +441,17 @@ function updateTopArtists(data) {
     artistData.forEach(([artist, totalMinutes], index) => { const li = document.createElement("li"); li.innerHTML = `<span class="artist-name">${index + 1}. ${artist}</span> <span class="artist-time">(${formatTime(totalMinutes)})</span>`; targetUl.appendChild(li); });
 }
 
-// function updateTopTracksChart(data) {
-//     const targetDiv = document.getElementById('top-tracks-chart'); // Use descriptive name
-//     if (!targetDiv) return;
-//     targetDiv.innerHTML = "";
-//     if (!requiredColumns.track_name) { targetDiv.innerHTML = `<p class="info-message">'Track Name' column (master_metadata_track_name) missing.</p>`; return; }
-//     if (!data || data.length === 0) { targetDiv.innerHTML = `<p class="empty-message">No data.</p>`; return; }
-//     const trackData = d3.rollups( data.filter(d => d.track && d.track !== "Unknown Track" && d.track !== "N/A" && d.ms_played > 0), v => d3.sum(v, d => d.ms_played / 60000), d => `${d.track} • ${d.artist}`).sort((a, b) => d3.descending(a[1], b[1])).slice(0, 15);
-//     if (trackData.length === 0) { targetDiv.innerHTML = `<p class="empty-message">No track data in this period.</p>`; return; }
-//     const chartHeight = trackData.length * 25 + chartMargin.top + chartMargin.bottom;
-//     const containerWidth = targetDiv.parentElement?.clientWidth || 400;
-//     const chartWidth = containerWidth > 0 ? containerWidth : 400;
-//     const width = chartWidth - chartMargin.left - chartMargin.right;
-//     const height = chartHeight - chartMargin.top - chartMargin.bottom;
-//     if (width <= 0 || height <= 0) { targetDiv.innerHTML = `<p class="error-message">Container too small.</p>`; return; }
-//     const svg = d3.select(targetDiv).append("svg").attr("viewBox", `0 0 ${chartWidth} ${chartHeight}`).attr("preserveAspectRatio", "xMinYMid meet").append("g").attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
-//     const y = d3.scaleBand().range([0, height]).domain(trackData.map(d => d[0])).padding(0.2);
-//     const x = d3.scaleLinear().domain([0, d3.max(trackData, d => d[1]) || 1]).range([0, width]);
-//     svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x).ticks(5).tickFormat(d => formatTime(d))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", chartMargin.bottom - 15).attr("fill", "currentColor").attr("text-anchor", "middle").text("Total Listening Time");
-//     const yAxis = svg.append("g").attr("class", "axis axis--y").call(d3.axisLeft(y).tickSize(0).tickPadding(5)); yAxis.select(".domain").remove(); yAxis.selectAll("text").attr("x", -5);
-//     svg.selectAll(".bar").data(trackData).enter().append("rect").attr("class", "bar").attr("y", d => y(d[0])).attr("height", y.bandwidth()).attr("x", 0).attr("width", 0).attr("fill", "#1DB954").on("mouseover", (event, d) => showTooltip(event, `<b>${d[0]}</b><br>${formatTime(d[1])}`)).on("mousemove", moveTooltip).on("mouseout", hideTooltip).transition().duration(500).attr("width", d => Math.max(0, x(d[1])));
-// }
+function updateTopTracksChart(data) {
+    const targetUl = document.getElementById('top-tracks-chart'); if (!targetUl) return; targetUl.innerHTML = "";
+    if (!data || data.length === 0) { targetUl.innerHTML = `<li class="empty-message">No data.</li>`; return; }
+    const trackData = d3.rollups( data.filter(d => d.track && d.track !== "Unknown Track" && d.ms_played > 0), v => d3.sum(v, d => d.ms_played / 60000), d => d.track).sort((a, b) => d3.descending(a[1], b[1])).slice(0, 5);
+    if (trackData.length === 0) { targetUl.innerHTML = `<li class="empty-message">No Track data in this period.</li>`; return; }
+    trackData.forEach(([track, totalMinutes], index) => { const li = document.createElement("li"); li.innerHTML = `<span class="track-name">${index + 1}. ${track}</span> <span class="track-time">(${formatTime(totalMinutes)})</span>`; targetUl.appendChild(li); });
+}
 
-function updateTopTracksChart(data) { // Renamed function
+
+
+function updateTopTracksChart2(data) { // Renamed function
     const targetDiv = document.getElementById('top-tracks-chart');
     if (!targetDiv) return;
     targetDiv.innerHTML = ""; // Clear previous content
@@ -471,7 +459,7 @@ function updateTopTracksChart(data) { // Renamed function
     if (!data || data.length === 0) { /* ... no data message ... */ return; }
 
     // Data aggregation (same as before)
-    const trackData = d3.rollups(data.filter(d => d.track && d.track !== "Unknown Track" && d.track !== "N/A" && d.ms_played > 0), v => d3.sum(v, d => d.ms_played / 60000), d => `${d.track} • ${d.artist}`).sort((a, b) => d3.descending(a[1], b[1])).slice(0, 15);
+    const trackData = d3.rollups(data.filter(d => d.track && d.track !== "Unknown Track" && d.track !== "N/A" && d.ms_played > 0), v => d3.sum(v, d => d.ms_played / 60000), d => `${d.track} • ${d.artist}`).sort((a, b) => d3.descending(a[1], b[1])).slice(0, 5);
     if (trackData.length === 0) { /* ... no track data message ... */ return; }
 
     // --- Create List Structure ---
@@ -491,11 +479,17 @@ function updateTopTracksChart(data) { // Renamed function
         .data(trackData)
         .join("li");
 
-    // Add Track/Artist Name and Time
+ 
     items.append("span")
-         .attr("class", "track-info")
-         .html(d => `<span class="track-name">${d[0].split('•')[0].trim()}</span> <span class="track-artist">• ${d[0].split('•')[1].trim()}</span>`);
-
+    .attr("class", "track-info")
+    .html(d => {
+       const parts = d[0].split('•');
+       const trackName = parts[0] ? parts[0].trim() : 'Unknown Track';
+       const artistName = parts[1] ? parts[1].trim() : 'Unknown Artist';
+       // Insert <br> between track span and artist span
+       // Also removed the "•" as it looks better on a separate line
+       return `<span class="track-name">${trackName}</span><br><span class="track-artist">${artistName}</span>`; // NEW LINE with <br>
+    });
     items.append("span")
          .attr("class", "track-time")
          .text(d => `(${formatTime(d[1])})`);
@@ -523,74 +517,10 @@ function updateTopTracksChart(data) { // Renamed function
         .transition().duration(500)
         .attr("width", d => sparklineScale(d[1])); // Animate width
 
-    // --- Optional: Add some basic CSS for the list ---
-    /*
-    .top-tracks-sparkline-list { padding-left: 20px; list-style: decimal; }
-    .top-tracks-sparkline-list li { margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
-    .top-tracks-sparkline-list .track-info { flex-grow: 1; margin-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .top-tracks-sparkline-list .track-name { font-weight: 500; }
-    .top-tracks-sparkline-list .track-artist { font-size: 0.9em; color: #555; }
-    .top-tracks-sparkline-list .track-time { font-size: 0.9em; color: #777; margin-left: 5px; white-space: nowrap; }
-    .top-tracks-sparkline-list .sparkline { flex-shrink: 0; }
-    */
+
 }
 
-// function updateTopTracksChart(data) { // Renamed function
-//     const targetDiv = document.getElementById('top-tracks-chart'); // Target the same div
-//     if (!targetDiv) return;
-//     targetDiv.innerHTML = "";
-//     if (!requiredColumns.track_name) { /* ... error handling ... */ return; }
-//     if (!data || data.length === 0) { /* ... no data message ... */ return; }
 
-//     // Data aggregation (same as before)
-//     const trackData = d3.rollups(data.filter(d => d.track && d.track !== "Unknown Track" && d.track !== "N/A" && d.ms_played > 0), v => d3.sum(v, d => d.ms_played / 60000), d => `${d.track} • ${d.artist}`).sort((a, b) => d3.descending(a[1], b[1])).slice(0, 15);
-//     if (trackData.length === 0) { /* ... no track data message ... */ return; }
-
-//     // Dimensions (same as before)
-//     const chartHeight = trackData.length * 25 + chartMargin.top + chartMargin.bottom;
-//     const containerWidth = targetDiv.parentElement?.clientWidth || 400;
-//     const chartWidth = containerWidth > 0 ? containerWidth : 400;
-//     const width = chartWidth - chartMargin.left - chartMargin.right;
-//     const height = chartHeight - chartMargin.top - chartMargin.bottom;
-//     if (width <= 0 || height <= 0) { /* ... error handling ... */ return; }
-
-//     // SVG and Scales (same as before)
-//     const svg = d3.select(targetDiv).append("svg").attr("viewBox", `0 0 ${chartWidth} ${chartHeight}`).attr("preserveAspectRatio", "xMinYMid meet").append("g").attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
-//     const y = d3.scaleBand().range([0, height]).domain(trackData.map(d => d[0])).padding(0.4); // Adjust padding if needed
-//     const x = d3.scaleLinear().domain([0, d3.max(trackData, d => d[1]) || 1]).range([0, width]);
-
-//     // Axes (same as before)
-//     svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x).ticks(5).tickFormat(d => formatTime(d))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", chartMargin.bottom - 15).attr("fill", "currentColor").attr("text-anchor", "middle").text("Total Listening Time");
-//     const yAxis = svg.append("g").attr("class", "axis axis--y").call(d3.axisLeft(y).tickSize(0).tickPadding(5)); yAxis.select(".domain").remove(); yAxis.selectAll("text").attr("x", -5);
-
-//     // --- Lollipop Drawing ---
-//     const lollipopGroup = svg.selectAll(".lollipop")
-//         .data(trackData)
-//         .enter().append("g")
-//         .attr("class", "lollipop")
-//         .attr("transform", d => `translate(0, ${y(d[0]) + y.bandwidth() / 2})`); // Center vertically in band
-
-//     // Line
-//     lollipopGroup.append("line")
-//         .attr("x1", 0)
-//         .attr("x2", 0) // Start at 0 for animation
-//         .attr("stroke", "#aaa") // Lighter color for the line
-//         .attr("stroke-width", 2)
-//         .transition().duration(500)
-//         .attr("x2", d => Math.max(0, x(d[1]))); // Animate line length
-
-//     // Circle (Lollipop head)
-//     lollipopGroup.append("circle")
-//         .attr("cx", 0) // Start at 0 for animation
-//         .attr("r", 4) // Lollipop radius
-//         .attr("fill", "#1DB954") // Spotify green
-//         .on("mouseover", (event, d) => showTooltip(event, `<b>${d[0]}</b><br>${formatTime(d[1])}`))
-//         .on("mousemove", moveTooltip)
-//         .on("mouseout", hideTooltip)
-//         .transition().duration(500)
-//         .attr("cx", d => Math.max(0, x(d[1]))); // Animate circle position
-//     // --- End Lollipop Drawing ---
-// }
 
 
 function updateTimeOfDayChart(data) {
@@ -635,7 +565,7 @@ function handleBrushUpdate(filteredChartData) {
     updateTimeOfDayChart(dataToUpdate);
     updateDayOfWeekChart(dataToUpdate);
     drawStreamgraph(dataToUpdate, 'streamgraph-chart');
-    drawForceGraph(dataToUpdate, 'force-graph-chart'); // Use new function/ID
+    drawForceGraph2(dataToUpdate, 'force-graph-chart'); // Use new function/ID
 }
 
 function updateVisualization(filteredData) {
@@ -777,46 +707,7 @@ async function drawStreamgraph(filteredData, containerId) {
 }
 
 
-// ============================================== //
-// === FORCE-DIRECTED GRAPH FUNCTION ========== //
-// ============================================== //
 
-// async function drawForceGraph(filteredData, containerId, topN = 10) {
-//     const container = document.getElementById(containerId);
-//     if (!container) { console.error(`drawForceGraph Error: Container element with ID "${containerId}" not found.`); return; }
-//     container.innerHTML = "";
-//     if (!filteredData || filteredData.length < 2) { container.innerHTML = '<p class="empty-message">Not enough data in this period to show transitions.</p>'; return; }
-//     const musicData = filteredData.filter(d => d.artist && d.artist !== "Unknown Artist" && d.ms_played > 0).sort((a, b) => a.ts - b.ts);
-//     if (musicData.length < 2) { container.innerHTML = '<p class="empty-message">Not enough music plays in this period for transitions.</p>'; return; }
-//     const artistCounts = d3.rollup(musicData, v => v.length, d => d.artist);
-//     const topArtistsMap = new Map( Array.from(artistCounts.entries()).sort(([, countA], [, countB]) => countB - countA).slice(0, topN) );
-//     if (topArtistsMap.size < 2) { container.innerHTML = `<p class="empty-message">Fewer than 2 top artists found in this period.</p>`; return; }
-//     const transitions = new Map();
-//     for (let i = 0; i < musicData.length - 1; i++) { const sourceArtist = musicData[i].artist; const targetArtist = musicData[i + 1].artist; if (topArtistsMap.has(sourceArtist) && topArtistsMap.has(targetArtist) && sourceArtist !== targetArtist) { const key = `${sourceArtist}:::${targetArtist}`; transitions.set(key, (transitions.get(key) || 0) + 1); } }
-//     if (transitions.size === 0) { container.innerHTML = `<p class="empty-message">No transitions found between the top ${topN} artists in this period.</p>`; return; }
-//     const nodes = Array.from(topArtistsMap.keys()).map(artist => ({ id: artist, playCount: topArtistsMap.get(artist) || 0 }));
-//     const links = Array.from(transitions.entries()).map(([key, count]) => { const [source, target] = key.split(":::"); return { source: source, target: target, value: count }; });
-//     const margin = { top: 10, right: 10, bottom: 10, left: 10 }; const containerWidth = container.clientWidth || 600; const containerHeight = 400; const width = containerWidth - margin.left - margin.right; const height = containerHeight - margin.top - margin.bottom;
-//     if (width <= 0 || height <= 0) { container.innerHTML = `<p class="error-message">Container too small for graph.</p>`; return; }
-//     const svg = d3.select(container).append("svg").attr("viewBox", `0 0 ${containerWidth} ${containerHeight}`).attr("preserveAspectRatio", "xMinYMid meet").append("g").attr("transform", `translate(${margin.left}, ${margin.top})`);
-//     const minRadius = 4, maxRadius = 12; const nodeRadiusScale = d3.scaleSqrt().domain([0, d3.max(nodes, d => d.playCount) || 1]).range([minRadius, maxRadius]);
-//     const maxStrokeWidth = 5; const linkWidthScale = d3.scaleLinear().domain([0, d3.max(links, d => d.value) || 1]).range([1, maxStrokeWidth]);
-//     const simulation = d3.forceSimulation(nodes)
-//         .force("link", d3.forceLink(links).id(d => d.id).distance(80).strength(0.5))
-//         .force("charge", d3.forceManyBody().strength(-150))
-//         .force("center", d3.forceCenter(width / 2, height / 2))
-//         .force("collide", d3.forceCollide().radius(d => nodeRadiusScale(d.playCount) + 5).strength(0.7));
-//     const link = svg.append("g").attr("class", "force-links").attr("stroke", "#999").attr("stroke-opacity", 0.6).selectAll("line").data(links).join("line").attr("stroke-width", d => linkWidthScale(d.value));
-//     link.append("title").text(d => `${d.source.id} → ${d.target.id}\n${d.value} transitions`);
-//     const node = svg.append("g").attr("class", "force-nodes").attr("stroke", "#fff").attr("stroke-width", 1.0).selectAll("circle").data(nodes).join("circle").attr("r", d => nodeRadiusScale(d.playCount)).attr("fill", "#1DB954").call(drag(simulation));
-//     node.append("title").text(d => `${d.id}\n${d.playCount} plays in period`);
-//     const labels = svg.append("g").attr("class", "force-labels").attr("font-family", "sans-serif").attr("font-size", 9).attr("fill", "#333").selectAll("text").data(nodes).join("text").attr("dx", d => nodeRadiusScale(d.playCount) + 3).attr("dy", "0.35em").text(d => d.id);
-//     simulation.on("tick", () => { link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y); node.attr("cx", d => d.x).attr("cy", d => d.y); labels.attr("x", d => d.x).attr("y", d => d.y); });
-//     function drag(simulation) { function dragstarted(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; } function dragged(event, d) { d.fx = event.x; d.fy = event.y; } function dragended(event, d) { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; } return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended); }
-// }
-// ============================================== //
-// === FORCE-DIRECTED GRAPH FUNCTION (Zoomable) === //
-// ============================================== //
 
 async function drawForceGraph(filteredData, containerId, topN = 10) {
     const container = document.getElementById(containerId);
@@ -983,7 +874,336 @@ async function drawForceGraph(filteredData, containerId, topN = 10) {
     }
 }
 
+async function drawForceGraph2(filteredData, containerId, topN = 10) {
+    const container = document.getElementById(containerId);
+
+    // --- Robust Initial Checks ---
+    if (!container) {
+        console.error(`drawForceGraph Error: Container element with ID "${containerId}" not found.`);
+        return;
+    }
+    container.innerHTML = ""; // Clear previous content
+
+    if (!filteredData || filteredData.length < 2) {
+        container.innerHTML = '<p class="empty-message">Not enough data in this period to show transitions (need at least 2 plays).</p>';
+        const descEl = container.nextElementSibling;
+        if (descEl && descEl.classList.contains('chart-description')) {
+            descEl.innerHTML = 'Select a period with more listening history to view artist transitions.';
+        }
+        return;
+    }
+
+    // --- Data Preparation ---
+    const musicData = filteredData
+        .filter(d => d.artist && d.artist !== "Unknown Artist" && d.ms_played > 0)
+        .sort((a, b) => a.ts - b.ts); // Sort by time to get transitions right
+
+    if (musicData.length < 2) {
+        container.innerHTML = '<p class="empty-message">Not enough *music* plays in this period to show transitions.</p>';
+        return;
+    }
+
+    // Aggregate play counts for top N artists
+    const artistCounts = d3.rollup(musicData, v => v.length, d => d.artist);
+    const topArtistsMap = new Map(
+        Array.from(artistCounts.entries())
+             .sort(([, countA], [, countB]) => countB - countA)
+             .slice(0, topN)
+    );
+
+    if (topArtistsMap.size < 2) {
+        container.innerHTML = `<p class="empty-message">Fewer than 2 distinct top artists found in this period. Cannot draw transitions.</p>`;
+        return;
+    }
+
+    // Calculate transitions *only* between the top N artists
+    const transitions = new Map();
+    for (let i = 0; i < musicData.length - 1; i++) {
+        const sourceArtist = musicData[i].artist;
+        const targetArtist = musicData[i + 1].artist;
+        // Only count if *both* are in the top N and they are different artists
+        if (topArtistsMap.has(sourceArtist) && topArtistsMap.has(targetArtist) && sourceArtist !== targetArtist) {
+            const key = `${sourceArtist}:::${targetArtist}`; // Use a separator unlikely in names
+            transitions.set(key, (transitions.get(key) || 0) + 1);
+        }
+    }
+
+    if (transitions.size === 0) {
+        container.innerHTML = '<p class="empty-message">No transitions found *between* the top artists in this period.</p>';
+        return;
+    }
+
+    // Prepare nodes and links for D3 simulation
+    const nodes = Array.from(topArtistsMap.keys()).map(artist => ({
+        id: artist,
+        playCount: topArtistsMap.get(artist) || 0
+    }));
+
+    const links = Array.from(transitions.entries()).map(([key, count]) => {
+        const [source, target] = key.split(":::");
+        return {
+            source: source, // D3 simulation will resolve these to node objects
+            target: target,
+            value: count // Number of transitions
+        };
+    });
+    // --- End Data Preparation ---
 
 
-// --- REMOVED drawSankey FUNCTION ---
-// No drawSankey function definition needed anymore
+    // --- D3 Force Simulation Setup ---
+    const margin = { top: 10, right: 10, bottom: 10, left: 10 };
+    const containerWidth = container.clientWidth || 600;
+    const containerHeight = 400; // Fixed height, adjust if needed
+    const width = containerWidth - margin.left - margin.right;
+    const height = containerHeight - margin.top - margin.bottom;
+
+    if (width <= 0 || height <= 0) {
+        container.innerHTML = '<p class="error-message">Container is too small to draw the graph.</p>';
+        return;
+    }
+
+    // --- SVG Setup with Zoom ---
+    const svg = d3.select(container).append("svg")
+        .attr("viewBox", `0 0 ${containerWidth} ${containerHeight}`)
+        .attr("preserveAspectRatio", "xMinYMid meet")
+        .style("max-width", "100%") // Ensure responsiveness
+        .style("height", "auto");   // Ensure responsiveness
+
+    // Add group for MARGINS
+    const mainGroup = svg.append("g")
+        .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+    // Add the group that will ACTUALLY be transformed by zoom/pan
+    const zoomableGroup = mainGroup.append("g");
+
+    // Background rectangle to catch zoom events (optional but good practice)
+    mainGroup.append("rect")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("fill", "none")
+        .attr("pointer-events", "all");
+
+    // --- Define Arrowhead Marker ---
+    zoomableGroup.append("defs").append("marker") // Append defs to zoomableGroup
+        .attr("id", "arrowhead")
+        .attr("viewBox", "-0 -5 10 10") // Adjust viewBox as needed
+        .attr("refX", 15) // Distance arrow sits away from node center (tune with node radius)
+        .attr("refY", 0)
+        .attr("orient", "auto")
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("xoverflow", "visible")
+        .append("svg:path")
+        .attr("d", "M 0,-5 L 10 ,0 L 0,5") // Arrow shape
+        .attr("fill", "#999") // Arrow color
+        .style("stroke", "none");
+
+
+    // --- Scales ---
+    const minRadius = 5, maxRadius = 15; // Slightly larger radii
+    const playCountExtent = d3.extent(nodes, d => d.playCount);
+    const nodeRadiusScale = d3.scaleSqrt()
+        .domain([playCountExtent[0] || 0, playCountExtent[1] || 1])
+        .range([minRadius, maxRadius]);
+
+    // NEW: Node Color Scale (using Viridis - good for colorblindness)
+    const nodeColorScale = d3.scaleSequential(d3.interpolateViridis)
+         // Use 0 as min if extent[0] is 0 or undefined, prevents issues if min playcount > 0
+        .domain([playCountExtent[1] || 1, 0]);
+
+
+    const maxStrokeWidth = 6; // Slightly thicker max link
+    const linkWidthScale = d3.scaleLinear()
+        .domain([0, d3.max(links, d => d.value) || 1])
+        .range([1, maxStrokeWidth]); // Start from 1px
+
+    // --- Force Simulation ---
+    const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id)
+            .distance(90) // Increased distance
+            .strength(link => 1 / Math.min(link.source.playCount, link.target.playCount)) // Weaker links between popular nodes
+        )
+        .force("charge", d3.forceManyBody().strength(-180)) // Increased repulsion
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collide", d3.forceCollide().radius(d => nodeRadiusScale(d.playCount) + 6).strength(0.8)); // Increased collision buffer
+
+    // --- Adjacency List for Hover ---
+    const linkedByIndex = {};
+    links.forEach(d => {
+        linkedByIndex[`${d.source.id},${d.target.id}`] = 1;
+    });
+
+    function areNeighbors(a, b) {
+        return linkedByIndex[`${a.id},${b.id}`] || linkedByIndex[`${b.id},${a.id}`] || a.id === b.id;
+    }
+
+    // --- Draw Links (Lines) - Appended to zoomableGroup ---
+    const link = zoomableGroup.append("g")
+        .attr("class", "force-links")
+        .attr("stroke", "#999")
+        .attr("stroke-opacity", 0.5) // Slightly more transparent default
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke-width", d => linkWidthScale(d.value))
+        .attr("marker-end", "url(#arrowhead)"); // Apply the marker
+
+    link.append("title") // Basic HTML tooltip for links
+        .text(d => `${d.source.id} → ${d.target.id}\n${d.value} transitions`);
+
+    // --- Draw Nodes (Circles) - Appended to zoomableGroup ---
+    const node = zoomableGroup.append("g")
+        .attr("class", "force-nodes")
+        .attr("stroke", "#fff") // White border for contrast
+        .attr("stroke-width", 1.5)
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+        .attr("r", d => nodeRadiusScale(d.playCount))
+        .attr("fill", d => nodeColorScale(d.playCount)) // Use color scale
+        .call(drag(simulation)); // Attach drag behavior
+
+    node.append("title") // Basic HTML tooltip for nodes
+        .text(d => `${d.id}\n${d.playCount} plays in period`);
+
+    // --- Draw Labels (Text) - Appended to zoomableGroup ---
+    const labels = zoomableGroup.append("g")
+        .attr("class", "force-labels")
+        .attr("font-family", "sans-serif")
+        .attr("font-size", 10) // Slightly larger font
+        .attr("fill", "#333")
+        .attr("stroke", "white") // White outline for readability
+        .attr("stroke-width", 0.3)
+        .attr("paint-order", "stroke") // Draw stroke first, then fill
+        .attr("pointer-events", "none") // Prevent labels interfering
+        .selectAll("text")
+        .data(nodes)
+        .join("text")
+        .attr("dx", d => nodeRadiusScale(d.playCount) + 4) // Position based on radius
+        .attr("dy", "0.35em")
+        .text(d => d.id);
+
+
+    // --- Hover Interaction ---
+    node.on("mouseover", highlight)
+        .on("mouseout", unhighlight);
+    link.on("mouseover", highlightLink) // Optional: highlight link itself slightly more
+        .on("mouseout", unhighlightLink)
+
+    function highlight(event, d_hovered) {
+        const opacity = 0.15; // How much to fade others
+        node.style("opacity", n => areNeighbors(d_hovered, n) ? 1 : opacity);
+        node.style("stroke", n => n === d_hovered ? 'black' : '#fff'); // Highlight border of hovered
+        node.style("stroke-width", n => n === d_hovered ? 2.5 : 1.5);
+
+        link.style("stroke-opacity", l => (l.source === d_hovered || l.target === d_hovered) ? 0.9 : opacity * 0.5);
+        link.select("path") // Select the path inside the marker
+            .style("fill", l => (l.source === d_hovered || l.target === d_hovered) ? "#555" : "#ccc"); // Darken arrow if connected
+
+        labels.style("opacity", n => areNeighbors(d_hovered, n) ? 1 : opacity);
+    }
+
+    function unhighlight() {
+        node.style("opacity", 1);
+        node.style("stroke", '#fff');
+        node.style("stroke-width", 1.5);
+        link.style("stroke-opacity", 0.5); // Restore default link opacity
+        link.select("path").style("fill", "#999"); // Restore default arrow color
+        labels.style("opacity", 1);
+    }
+
+     function highlightLink(event, d_hovered) {
+        d3.select(event.currentTarget)
+          .style("stroke-opacity", 1)
+          .style("stroke", "#333")
+          .attr("stroke-width", linkWidthScale(d_hovered.value) + 1); // Slightly thicker
+        d3.select(event.currentTarget).select("path").style("fill", "#333"); // Darken arrow
+     }
+
+    function unhighlightLink(event, d_hovered) {
+         d3.select(event.currentTarget)
+           .style("stroke-opacity", 0.5) // Check if also node-hovered before setting final opacity? Simpler to just reset.
+           .style("stroke", "#999")
+           .attr("stroke-width", linkWidthScale(d_hovered.value));
+         d3.select(event.currentTarget).select("path").style("fill", "#999");
+         // Re-apply node hover if necessary (could happen if mouse moves quickly off link onto node)
+         const relatedNode = d3.select(".force-nodes circle[style*='stroke: black']").datum(); // Find if a node is actively hovered
+         if (relatedNode) {
+             highlight(null, relatedNode); // Re-trigger highlight based on node state
+         }
+    }
+
+    // --- Simulation Tick Handler ---
+    simulation.on("tick", () => {
+        // Update link positions, adjusting for node radius + arrow offset
+        link.attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        // Update node positions
+        node.attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+
+        // Update label positions
+        labels.attr("x", d => d.x)
+              .attr("y", d => d.y);
+    });
+
+    // --- Define Zoom Handler ---
+    function zoomed(event) {
+        zoomableGroup.attr("transform", event.transform);
+        // Optional: Adjust arrow size/stroke width based on zoom? (Can get complex)
+        // const k = event.transform.k;
+        // link.attr("stroke-width", d => linkWidthScale(d.value) / k);
+        // node.attr("stroke-width", 1.5 / k);
+    }
+
+    // --- Create and Configure Zoom Behavior ---
+    const zoom = d3.zoom()
+        .scaleExtent([0.2, 8]) // Wider zoom range
+        .extent([[0, 0], [width, height]])
+        .translateExtent([[0, 0], [width, height]]) // Limit panning
+        .on("zoom", zoomed);
+
+    // --- Attach Zoom Behavior to the SVG ---
+    svg.call(zoom);
+    svg.on("dblclick.zoom", null); // Disable double-click zoom
+
+    // --- Drag Functions (remain the same) ---
+    function drag(simulation) {
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+            d3.select(this).raise(); // Bring dragged node to front
+        }
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            // Only unfix if not actively zooming/panning (prevents jitter)
+            if (!event.sourceEvent || !event.sourceEvent.type.includes('zoom')) {
+               d.fx = null;
+               d.fy = null;
+            }
+             // Reapply hover if needed after drag ends
+             if (d3.select(this).style("opacity") == 1) { // Check if it *should* be highlighted
+                 highlight(event, d);
+             }
+        }
+        return d3.drag()
+                 .on("start", dragstarted)
+                 .on("drag", dragged)
+                 .on("end", dragended);
+    }
+
+    // Update description
+    const descEl = container.nextElementSibling;
+    if (descEl && descEl.classList.contains('chart-description')) {
+        descEl.innerHTML = `Shows transitions between the top ${nodes.length} most played artists in the selected period. Node size/color indicates play count. Link thickness indicates transition frequency. Hover over nodes to highlight connections. Pan/Zoom enabled.`;
+    }
+}
+
