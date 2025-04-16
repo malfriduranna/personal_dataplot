@@ -51,3 +51,10 @@
   font-size: var(--font-small-size);
   margin: 0;
 }
+
+.placeholder {
+  text-align: start;
+  font-style: italic;
+  color: #555;
+  margin-bottom: calc(var(--spacing) / 2);
+}

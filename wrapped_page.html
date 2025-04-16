@@ -5,6 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Spotify Dashboard - Enhanced</title>
         <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="layout.css">
+        <link rel="stylesheet" href="chart.css">
         <!-- Main D3 Library -->
         <script src="https://d3js.org/d3.v7.min.js"></script>
         <!-- D3 Sankey Library - Using UNPKG -->
@@ -35,21 +37,10 @@
 
         <!-- Calendar and Top Artists -->
         <div class="visualization-area">
-            <div id="calendar-container">
+            <div id="calendar-container" class="chart_container full_width">
                 <h2>Daily Listening Heatmap</h2>
                 <div id="calendar"></div>
                 <div id="legend"></div>
-            </div>
-            <div class="top-lists-container">
-                <div id="top-artists-container">
-                    <h2>Top 5 Artists</h2>
-                    <ul id="topArtists"></ul>
-                </div>
-                <div class="chart-container" id="top-tracks-container">
-                    <h2>Top 5 Tracks</h2>
-                    <!-- Inner div ID matches JS target -->
-                    <div id="top-tracks-chart"></div>
-                </div>
             </div>
         </div>
 
@@ -57,14 +48,14 @@
 
 
         <!-- Row for charts linked to Main View -->
-        <div class="charts-row">
+        <div class="row">
             <!-- Container ID matches CSS/JS convention -->
  
-            <div class="chart-container" id="time-of-day-container">
+            <div class="chart_container" id="time-of-day-container">
                  <h2>Time of Day (in Main View)</h2>
                  <div id="time-of-day-chart"></div>
             </div>
-            <div class="chart-container" id="day-of-week-container">
+            <div class="chart_container" id="day-of-week-container">
                  <h2>Day of Week (in Main View)</h2>
                  <div id="day-of-week-chart"></div>
             </div>

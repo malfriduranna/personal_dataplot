@@ -1,0 +1,11 @@
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: calc(var(--spacing) / 2);
+}
+table th,
+table td {
+  padding: calc(var(--spacing) / 2);
+  border: 1px solid #ddd;
+  text-align: left;
+}

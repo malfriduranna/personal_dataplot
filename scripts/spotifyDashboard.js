@@ -1,6 +1,6 @@
 // --- Configuration ---
-const cellSize = 15;
-const cellPadding = 1.5;
+const cellSize = 15;      // increased from 15
+const cellPadding = 2;
 const leftPadding = 40;
 const topPadding = 25;
 const noDataColor = "#ebedf0";
@@ -64,7 +64,7 @@ let currentCalendarHeight = 0;
 // --- Data Processing (Runs once) ---
 (async function loadData() {
     try {
-        const rawData = await d3.csv("data/spotify_listening_history.csv");
+        const rawData = await d3.csv("data/astrid_data.csv");
 
         // Detect available columns
         const columns = new Set(rawData.columns);
@@ -279,6 +279,7 @@ function drawCalendar(data, initialStartDate, initialEndDate) {
         if (typeof handleBrushUpdate === 'function') handleBrushUpdate([]);
         return;
     }
+
     calendarStartDay = allDaysInCalendar[0];
     const endDay = allDaysInCalendar[allDaysInCalendar.length - 1];
     const months = d3.timeMonths(calendarStartDay, endDay);
@@ -288,7 +289,8 @@ function drawCalendar(data, initialStartDate, initialEndDate) {
     const height = currentCalendarHeight + topPadding + 30;
     const maxMinutes = d3.max(valueMap.values());
     calendarColorScale.domain([0, maxMinutes || 1]);
-    const svg = d3.select("#calendar").append("svg").attr("width", width).attr("height", height)
+    const calanderDiv = d3.select("#calendar");
+    const svg = calanderDiv.append("svg").attr("width", width).attr("height", height)
                   .append("g").attr("transform", `translate(${leftPadding}, ${topPadding})`);
     svgInstance = svg;
     const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];

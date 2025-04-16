@@ -16,3 +16,10 @@
   font-weight: 500;
   font-size: 0.9rem;
 }
+
+.empty-message {
+  text-align: center;
+  font-style: italic;
+  color: #666;
+  margin-top: 1rem;
+}

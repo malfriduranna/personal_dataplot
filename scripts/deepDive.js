@@ -1,11 +1,3 @@
-/***********************
- * Global Drill-Down State
- ***********************/
-let drillDownState = {
-  selectedYear: null,
-  selectedAlbum: null,
-};
-
 // Global variable to track the current artist (for time range filtering)
 let currentArtistName = "";
 
@@ -147,9 +139,9 @@ function updatePeakListening(data, artistName) {
   // If we grouped by day or week, we have sums for that day/week.
 
   // Dimensions
-  const margin = { top: 20, right: 30, bottom: 70, left: 50 },
+  const margin = { top: 20, right: 30, bottom: 20, left: 50 },
     width = 800 - margin.left - margin.right,
-    height = 300 - margin.top - margin.bottom;
+    height = 150 - margin.top - margin.bottom;
 
   const svg = container
     .append("svg")
@@ -289,42 +281,47 @@ function updatePeakListening(data, artistName) {
   }
 }
 
-function wrapText(textSelection, maxWidth, maxLines = 3) {
-  textSelection.each(function () {
-    const text = d3.select(this);
-    const words = text.text().split(/\s+/);
-    text.text(null);
-    let line = [];
-    let lineNumber = 0;
-    const lineHeight = 1.1; // ems
-    const x = text.attr("x") || 0;
-    const y = text.attr("y") || 0;
-    let dy = parseFloat(text.attr("dy")) || 0;
-    let tspan = text
+function wrapText(text, width) {
+  text.each(function () {
+    const textEl = d3.select(this);
+    const origX = textEl.attr("x"); // Save the original x position.
+    const words = textEl.text().split(/\s+/).reverse();
+    let word,
+      line = [],
+      lineNumber = 0,
+      lineHeight = 1.1, // in ems
+      y = textEl.attr("y"),
+      dy = parseFloat(textEl.attr("dy")) || 0;
+
+    // Remove the original text
+    textEl.text(null);
+
+    // Create the first tspan
+    let tspan = textEl
       .append("tspan")
-      .attr("x", x)
+      .attr("x", origX)
       .attr("y", y)
-      .attr("dy", dy + "em")
-      .text("");
-    for (let i = 0; i < words.length; i++) {
-      line.push(words[i]);
+      .attr("dy", dy + "em");
+
+    while ((word = words.pop())) {
+      line.push(word);
       tspan.text(line.join(" "));
-      if (tspan.node().getComputedTextLength() > maxWidth && line.length > 1) {
+
+      // If the tspan is too long, remove the last word and start a new line.
+      if (tspan.node().getComputedTextLength() > width) {
         line.pop();
         tspan.text(line.join(" "));
-        line = [words[i]];
-        lineNumber++;
-        if (lineNumber >= maxLines) {
-          tspan.text(tspan.text() + " …");
-          break;
-        }
-        tspan = text
+        line = [word];
+        tspan = textEl
           .append("tspan")
-          .attr("x", x)
-          .attr("dy", lineHeight + "em")
-          .text(words[i]);
+          .attr("x", origX) // Reset x attribute for each new line.
+          .attr("y", y)
+          .attr("dy", ++lineNumber * lineHeight + dy + "em")
+          .text(word);
       }
     }
+    // Ensure all tspans have the same x value:
+    textEl.selectAll("tspan").attr("x", origX);
   });
 }
 
@@ -961,47 +958,72 @@ function updateBarChart(data, artistName) {
 /***********************
  * Scatter Plot with Enhanced Interactions
  ***********************/
+// updateScatterPlot updates the scatter plot and sets up the dot click handler.
+// updateScatterPlot updates the scatter plot and sets up the dot click handler.
+// Global variable to store the currently selected track name.
+let selectedTrackName = null;
+
+/**
+ * updateScatterPlot creates/updates the scatter plot.
+ * It also re-applies (or updates) the info box if one is already open,
+ * so that when you change the time frame the stats for the selected track update.
+ */
 function updateScatterPlot(data, artistName) {
-  const songDist = d3.select("#songDist");
-  songDist.selectAll(":not(h2)").remove();
-  songDist
-    .append("p")
-    .attr("id", "songPlaceholder")
-    .style("text-align", "center")
-    .style("font-style", "italic")
-    .style("color", "#555")
-    .text("Select a song to see more details");
-  // Filter data for the artist.
+  // Select the chart container.
+  const scatterContainer = d3.select("#scatterChart");
+  // Do not remove the persistent placeholder (e.g., <p id="albumPlaceholder">)
+  // Create (or reuse) a flex container to hold the SVG and the info box.
+  let flexContainer = scatterContainer.select("div.chartAndInfo");
+  if (flexContainer.empty()) {
+    flexContainer = scatterContainer
+      .append("div")
+      .attr("class", "chartAndInfo")
+      .style("display", "flex")
+      .style("flex-direction", "row");
+  }
+
+  // Create (or reuse) the chart container.
+  let chartDiv = flexContainer.select("div.chart_svg");
+  if (chartDiv.empty()) {
+    chartDiv = flexContainer.append("div").attr("class", "chart_svg");
+  }
+
+  // Check if an SVG exists; if not, create one.
+  let svgEl = chartDiv.select("svg");
+  if (svgEl.empty()) {
+    svgEl = chartDiv
+      .append("svg")
+      .attr("viewBox", "0 0 500 300")
+      .style("width", "510px") // You can also choose "auto" for responsiveness.
+      .style("height", "300px");
+    // Append a group for margins.
+    svgEl = svgEl.append("g").attr("transform", "translate(30,30)");
+  } else {
+    svgEl = svgEl.select("g");
+  }
+
+  // Define dimensions and margins for inner chart area.
+  const margin = { top: 20, right: 20, bottom: 50, left: 50 },
+    innerWidth = 500 - margin.left - margin.right,
+    innerHeight = 300 - margin.top - margin.bottom;
+
+  // Prepare track statistics per song.
   const artistData = data.filter(
     (d) =>
       d.master_metadata_album_artist_name &&
       d.master_metadata_album_artist_name.toLowerCase() ===
         artistName.toLowerCase()
   );
-
-  if (!artistData.length) {
-    d3.select("#scatterChart").html(
-      "<h2>Track Listening Scatter Plot</h2><p class='empty-message'>No listening data found for this artist.</p>"
-    );
-    return;
-  }
-
-  // Prepare track statistics per song with additional stats.
   const trackStats = d3
     .rollups(
       artistData,
       (v) => {
-        // Total minutes played on the track.
         const totalMinutes = d3.sum(v, (d) => +d.ms_played / 60000);
-
-        // Build a map of each day and the total minutes played.
         const dayMap = d3.rollup(
           v,
           (vv) => d3.sum(vv, (d) => +d.ms_played / 60000),
           (d) => new Date(d.ts).toLocaleDateString()
         );
-
-        // Determine the day with the highest listening minutes.
         let mostPlayedDay = "";
         let mostMinutesInDay = 0;
         dayMap.forEach((minutes, day) => {
@@ -1010,16 +1032,10 @@ function updateScatterPlot(data, artistName) {
             mostPlayedDay = day;
           }
         });
-
-        // Count the number of unique days the track was played.
         const dayCount = dayMap.size;
-
-        // Compute distribution per time-of-day period.
-        // Define periods: Morning: 5-12; Afternoon: 12-17; Evening: 17-21; Night: 21-5.
         const periodCount = { Morning: 0, Afternoon: 0, Evening: 0, Night: 0 };
         v.forEach((d) => {
-          const date = new Date(d.ts);
-          const hour = date.getHours();
+          const hour = new Date(d.ts).getHours();
           let period = "";
           if (hour >= 5 && hour < 12) period = "Morning";
           else if (hour >= 12 && hour < 17) period = "Afternoon";
@@ -1027,7 +1043,6 @@ function updateScatterPlot(data, artistName) {
           else period = "Night";
           periodCount[period]++;
         });
-        // Determine which period has the highest count.
         let mostFrequentPeriod = "";
         let maxPeriodCount = 0;
         for (const period in periodCount) {
@@ -1036,8 +1051,6 @@ function updateScatterPlot(data, artistName) {
             mostFrequentPeriod = period;
           }
         }
-
-        // Compute year distribution to find the year with most minutes played.
         const yearMap = d3.rollup(
           v,
           (vv) => d3.sum(vv, (d) => +d.ms_played / 60000),
@@ -1051,10 +1064,7 @@ function updateScatterPlot(data, artistName) {
             mostPlayedYear = year;
           }
         });
-
-        // Use d3.max to get the maximum minutes played on a single day.
         const maxMinutes = d3.max(Array.from(dayMap.values()));
-
         return {
           totalMinutes,
           maxMinutes,
@@ -1067,7 +1077,6 @@ function updateScatterPlot(data, artistName) {
       (d) => d.master_metadata_track_name
     )
     .map(([track, stats]) => {
-      // Retrieve a representative event for this track to fetch spotify_track_uri.
       const trackForImg = artistData.find(
         (d) => d.master_metadata_track_name === track
       );
@@ -1078,7 +1087,7 @@ function updateScatterPlot(data, artistName) {
       };
     });
 
-  // Outliers (optional)
+  // Calculate outliers (optional).
   const maxMinutesThreshold = d3.quantile(
     trackStats.map((d) => d.maxMinutes).sort(d3.ascending),
     0.99
@@ -1093,199 +1102,240 @@ function updateScatterPlot(data, artistName) {
       d.totalMinutes > totalMinutesThreshold
   );
 
-  // Use the scatterChart container and preserve the h2 header.
-  const scatterContainer = d3.select("#scatterChart");
-
-  // Clear any previous chart (leaving the h2 intact).
-  scatterContainer.selectAll("div.chart_svg").remove();
-
-  // Create the fixed container for the SVG below the h2 header.
-  const chartSVG = scatterContainer
-    .append("div")
-    .attr("id", "chartSVG")
-    .attr("class", "chart_svg");
-
-  // Define dimensions for the SVG (chart).
-  const margin = { top: 30, right: 30, bottom: 50, left: 50 },
-    width = 400 - margin.left - margin.right,
-    height = 300 - margin.top - margin.bottom;
-
-  // Append the SVG to the chartSVG container.
-  const svg = chartSVG
-    .append("svg")
-    .attr(
-      "viewBox",
-      `0 0 ${width + margin.left + margin.right} ${
-        height + margin.top + margin.bottom
-      }`
-    )
-    .attr("preserveAspectRatio", "xMidYMid meet")
-    .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
-
-  // Define scales.
+  // Update scales.
   const x = d3
     .scaleLinear()
     .domain([0, d3.max(trackStats, (d) => d.totalMinutes)])
     .nice()
-    .range([0, width]);
+    .range([0, innerWidth]);
   const y = d3
     .scaleLinear()
     .domain([0, d3.max(trackStats, (d) => d.maxMinutes)])
     .nice()
-    .range([height, 0]);
+    .range([innerHeight, 0]);
 
-  // Append axes.
-  svg
+  // Remove and recreate axes to update with new scales.
+  svgEl.selectAll(".x-axis, .y-axis, .axis-label").remove();
+  svgEl
     .append("g")
-    .attr("transform", `translate(0,${height})`)
-    .call(d3.axisBottom(x));
-  svg.append("g").call(d3.axisLeft(y));
-
+    .attr("class", "x-axis")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x))
+    .selectAll("text")
+    .style("font-size", "8px");
+  svgEl
+    .append("g")
+    .attr("class", "y-axis")
+    .call(d3.axisLeft(y))
+    .selectAll("text")
+    .style("font-size", "8px");
   // Append axis labels.
-  svg
+  svgEl
     .append("text")
-    .attr("x", width)
-    .attr("y", height + 40)
+    .attr("class", "axis-label")
+    .attr("x", innerWidth)
+    .attr("y", innerHeight + 25)
     .attr("text-anchor", "end")
+    .style("font-size", "10px")
     .text("Total Minutes Played");
-  svg
+  svgEl
     .append("text")
+    .attr("class", "axis-label")
     .attr("transform", "rotate(-90)")
-    .attr("y", -40)
-    .attr("x", -10)
+    .attr("y", -25)
+    .attr("x", -5)
     .attr("text-anchor", "end")
+    .style("font-size", "9px")
     .text("Max Minutes in a Day");
 
-  // Create circles for each track.
-  const circles = svg
-    .selectAll("circle")
-    .data(trackStats)
-    .enter()
-    .append("circle")
-    .attr("cx", (d) => x(d.totalMinutes))
-    .attr("cy", (d) => y(d.maxMinutes))
-    .attr("r", 0)
-    .attr("fill", "#69b3a2")
-    .attr("opacity", 0.7)
-    .on("click", (event, d) => {
-      // Update the songDist panel when a circle is clicked.
-      updateSongDist(d);
-    });
+  // Create or update circles using the D3 join pattern.
+  const circles = svgEl.selectAll("circle").data(trackStats, (d) => d.track);
+  circles.join(
+    (enter) =>
+      enter
+        .append("circle")
+        .attr("cx", (d) => x(d.totalMinutes))
+        .attr("cy", (d) => y(d.maxMinutes))
+        .attr("r", 0)
+        .attr("fill", "#69b3a2")
+        .attr("opacity", 0.7)
+        .style("cursor", "pointer") // Make cursor a pointer
+        .on("click", (event, d) => {
+          // Save the selected track name globally.
+          selectedTrackName = d.track;
+          // Show a loading state and update the info box.
+          updateSongDist(d);
+        })
+        .on("mouseover", (event, d) => {
+          tooltip.transition().duration(200).style("opacity", 0.9);
+          tooltip
+            .html(d.track)
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY - 28 + "px")
+            .style("cursor", "pointer");
+        })
+        .on("mousemove", (event) => {
+          tooltip
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY - 28 + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.transition().duration(500).style("opacity", 0);
+        })
+        .call((enter) => enter.transition().duration(800).attr("r", 4)),
+    (update) =>
+      update.call((update) =>
+        update
+          .transition()
+          .duration(800)
+          .attr("cx", (d) => x(d.totalMinutes))
+          .attr("cy", (d) => y(d.maxMinutes))
+      ),
+    (exit) =>
+      exit.call((exit) => exit.transition().duration(800).attr("r", 0).remove())
+  );
 
-  // Add tooltip on hover (optional).
-  circles
-    .append("title")
-    .text(
-      (d) =>
-        `${d.track}: ${d.totalMinutes.toFixed(1)} total, ${d.maxMinutes.toFixed(
-          1
-        )} max`
-    );
+  // Update labels for outliers (optional).
+  const labels = svgEl.selectAll(".label").data(outliers, (d) => d.track);
+  labels.join(
+    (enter) =>
+      enter
+        .append("text")
+        .attr("class", "label")
+        .attr("x", (d) => x(d.totalMinutes) + 8)
+        .attr("y", (d) => y(d.maxMinutes))
+        .attr("dy", "0em")
+        .text((d) => d.track)
+        .style("font-size", "10px")
+        .style("fill", "#333")
+        .style("opacity", 0)
+        .each(function () {
+          wrapText(d3.select(this), 50); // Wrap text to a max width of 50px
+        })
+        .call((enter) => enter.transition().duration(800).style("opacity", 1)),
+    (update) =>
+      update.call((update) =>
+        update
+          .transition()
+          .duration(800)
+          .attr("x", (d) => x(d.totalMinutes) + 8)
+          .attr("y", (d) => y(d.maxMinutes))
+      ),
+    (exit) =>
+      exit.call((exit) =>
+        exit.transition().duration(800).style("opacity", 0).remove()
+      )
+  );
 
-  circles
-    .transition()
-    .duration(800)
-    .attr("r", 6)
-    .delay((d, i) => i * 10);
+  // Create a tooltip if it doesn't exist.
+  let tooltip = d3.select("body").select(".tooltip");
+  if (tooltip.empty()) {
+    tooltip = d3
+      .select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("padding", "4px 8px")
+      .style("background", "rgba(0, 0, 0, 0.7)")
+      .style("color", "#fff")
+      .style("border-radius", "4px")
+      .style("pointer-events", "none")
+      .style("opacity", 0);
+  }
 
-  // Add labels for outliers (optional).
-  const labels = svg
-    .selectAll(".label")
-    .data(outliers)
-    .enter()
-    .append("text")
-    .attr("class", "label")
-    .attr("x", (d) => x(d.totalMinutes) + 8)
-    .attr("y", (d) => y(d.maxMinutes))
-    .attr("dy", "0em")
-    .text((d) => d.track)
-    .style("font-size", "10px")
-    .style("fill", "#333")
-    .style("opacity", 0);
-
-  // Apply your wrapText function to each label (if defined).
-  labels.each(function () {
-    wrapText(d3.select(this), 50);
-  });
-
-  labels.transition().duration(800).style("opacity", 1);
+  // If an info box is currently open (because a dot was previously selected)
+  // and the selectedTrackName is still set, update its stats if available.
+  if (selectedTrackName) {
+    // Try to find new stats for the selected track.
+    const updatedData = trackStats.find((d) => d.track === selectedTrackName);
+    if (updatedData) {
+      // Re-call updateSongDist to update the info box.
+      updateSongDist(updatedData);
+    }
+  }
 }
 
-/*****************************
- * Information about the track in the side panel
- **************************/
+/**
+ * updateSongDist displays (or updates) an info box for the selected track.
+ * It shows a loading state before the details are loaded.
+ */
 function updateSongDist(trackData) {
-  const songDist = d3.select("#songDist");
+  // Select the flex container that holds both the chart and the info box.
+  const flexContainer = d3.select("#scatterChart").select("div.chartAndInfo");
+  // Remove any existing info box.
+  flexContainer.selectAll("div.infoDiv").remove();
 
-  // Remove everything except h2
-  songDist.selectAll(":not(h2)").remove();
-
-  const infoDiv = songDist
+  // Append a new info box.
+  const infoDiv = flexContainer
     .append("div")
     .attr("class", "infoDiv")
     .style("display", "flex")
     .style("flex-direction", "column")
     .style("justify-content", "space-between")
-    .style("margin-bottom", "10px");
+    .style("margin-top", "10px")
+    .style("flex", "1");
+
+  // Immediately show a loading state.
+  infoDiv
+    .html("<p>Loading details…</p>")
+    .style("text-align", "center")
+    .style("color", "#555")
+    .style("font-style", "italic");
 
   let artistImageUrl = "";
 
   // Helper function to render the song details.
   function renderDetails() {
-    if (artistImageUrl) {
-      // Append track img
-      infoDiv
-        .insert("img", ":first-child")
-        .attr("src", artistImageUrl)
-        .attr("alt", "Spotify Track Image")
-        .style("width", "30%")
-        .style("display", "flex")
-        .style("margin", "0 auto")
-        .style("height", "auto");
-    }
-
+    // Clear the loading state.
+    infoDiv.html("");
     const infoContent = infoDiv
       .append("div")
       .attr("class", "infoContent")
       .style("display", "flex")
       .style("flex-direction", "row")
       .style("align-items", "start")
-      .style("margin-top", "calc(var(--spacing) /2)")
       .style("justify-content", "space-between")
       .style("width", "100%");
 
-    infoContent
+    const headerContent = infoContent
+      .append("div")
+      .attr("class", "headerContent")
+      .style("flex", "1")
+      .style("display", "flex")
+      .style("flex-direction", "row");
+    if (artistImageUrl) {
+      // Insert the track image at the top.
+      headerContent
+        .insert("img", ":first-child")
+        .attr("src", artistImageUrl)
+        .attr("alt", "Spotify Track Image")
+        .style("width", "20%")
+        .style("display", "block")
+        .style("border-radius", "var(--border-radius)")
+        .style("height", "auto");
+    }
+    headerContent
       .append("h3")
       .style("margin-left", "var(--spacing)")
       .text(trackData.track);
-
     infoContent
       .append("button")
-      .attr("class", "closeButton")
+      .attr("class", "button")
       .text("X")
       .style("cursor", "pointer")
-      .style("margin-right", "var(--spacing)")
       .on("click", () => {
-        songDist.selectAll(":not(h2)").remove();
-        songDist
-          .append("p")
-          .attr("id", "songPlaceholder")
-          .style("text-align", "center")
-          .style("font-style", "italic")
-          .style("color", "#555")
-          .text("Select a song to see more details");
+        // Close the info box.
+        selectedTrackName = null;
+        flexContainer.selectAll("div.infoDiv").remove();
       });
-
     const songInfoDiv = infoDiv.append("div").attr("class", "songInfoDiv");
-
     songInfoDiv
       .append("div")
       .style("padding", "var(--spacing)")
       .style("background", "rgba(76, 175, 79, 0.1)")
       .style("border-radius", "var(--border-radius-small)")
       .style("border", "1px solid rgb(221, 221, 221)")
-      .style("font-size", "var(--font-small-size")
+      .style("font-size", "var(--font-small-size)")
       .html(
         `<p>You have listened to this track for a total of <strong>${trackData.totalMinutes.toFixed(
           1
@@ -1299,7 +1349,7 @@ function updateSongDist(trackData) {
       );
   }
 
-  // If a Spotify track URI exists, try to fetch the image using the oEmbed API.
+  // If a Spotify track URI exists, fetch the image via the oEmbed API.
   if (trackData.spotify_track_uri) {
     const trackId = trackData.spotify_track_uri.split(":")[2];
     const oEmbedUrl = `https://open.spotify.com/oembed?url=https://open.spotify.com/track/${trackId}`;
@@ -1311,7 +1361,6 @@ function updateSongDist(trackData) {
       })
       .catch(() => renderDetails());
   } else {
-    console.log("No Spotify track URI found.");
     renderDetails();
   }
 }
@@ -1319,7 +1368,37 @@ function updateSongDist(trackData) {
 /***********************
  * Sunburst Chart with Drill-Down for Song Distribution
  ***********************/
+// Optional: Call this function if you want a header above your sunburst chart.
+function renderSunburstHeader() {
+  // This header is separate from the chart and info box.
+  const chartContainer = d3.select("#sunburstChart");
+  // Remove previous header if it exists.
+  chartContainer.select("h2.sunburstHeader").remove();
+  chartContainer
+    .insert("h2", ":first-child")
+    .attr("class", "sunburstHeader")
+    .text("Album Distribution (Sunburst Chart)");
+}
+
+// updateSunburstChart creates the sunburst and sets up click events.
+// Global state object
+
+// Global state object
+const drillDownState = { selectedAlbum: null };
+const albumColorMap = new Map();
+const colorScale = d3.scaleOrdinal(d3.schemeSet2);
+
+function hashStringToIndex(str, range) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0; // Convert to 32bit int
+  }
+  return Math.abs(hash) % range;
+}
+
 function updateSunburstChart(data, artistName) {
+  // Filter artist data that includes album names.
   const artistData = data.filter(
     (d) =>
       d.master_metadata_album_artist_name &&
@@ -1329,72 +1408,43 @@ function updateSunburstChart(data, artistName) {
   );
 
   const chartContainer = d3.select("#sunburstChart");
-  chartContainer.selectAll("*:not(h2)").remove();
 
-  if (!artistData.length) {
-    chartContainer
-      .append("p")
-      .attr("class", "empty-message")
-      .text("No album data found for this artist.");
-    return;
+  // Create (or reuse) the flex container.
+  let flexContainer = chartContainer.select("div.sunburstFlex");
+  if (flexContainer.empty()) {
+    flexContainer = chartContainer
+      .append("div")
+      .attr("class", "sunburstFlex")
+      .style("display", "flex")
+      .style("flex-direction", "row")
+      .style("justify-content", "space-around")
+      .style("gap", "20px");
+    // Append the fixed sunburst SVG container.
+    flexContainer.append("div").attr("class", "sunburstSVG");
+    // Append the album info container and hide it initially.
+    flexContainer
+      .append("div")
+      .attr("class", "albumInfo")
+      .style("border-radius", "var(--border-radius-small)")
+      .style("padding", "var(--spacing)")
+      .style("display", "none"); // Hide initially
+  } else {
+    // Always clear the sunburstSVG but not the albumInfo container.
+    flexContainer.select("div.sunburstSVG").html("");
   }
 
+  // Select the two containers.
+  const svgContainer = flexContainer
+    .select("div.sunburstSVG")
+    .style("display", "flex")
+    .style("height", "350px")
+    .style("align-items", "center");
+
+  // Group the artist data by album.
   const albums = d3.groups(
     artistData,
     (d) => d.master_metadata_album_album_name
   );
-
-  const albumMinutes = albums.map(([albumName, records]) => ({
-    album: albumName,
-    minutes: d3.sum(records, (d) => +d.ms_played / 60000),
-    tracks: Array.from(
-      new Set(records.map((d) => d.master_metadata_track_name))
-    ),
-    daysListened: new Set(
-      records.map((d) => new Date(d.ts).toISOString().split("T")[0])
-    ).size,
-  }));
-
-  albumMinutes.sort((a, b) => b.minutes - a.minutes);
-  const topAlbum = albumMinutes[0];
-  const albumWithMostTracks = albumMinutes.reduce(
-    (max, current) =>
-      current.tracks.length > max.tracks.length ? current : max,
-    albumMinutes[0]
-  );
-  const mostConsistentAlbum = albumMinutes.reduce(
-    (max, current) => (current.daysListened > max.daysListened ? current : max),
-    albumMinutes[0]
-  );
-
-  chartContainer
-    .insert("div", "svg")
-    .attr("class", "info_box")
-    .style("margin", "var(--spacing) 0")
-    .style("background", "rgba(76, 175, 79, 0.1)")
-    .style("padding", "var(--spacing)")
-    .style("font-size", "var(--font-small-size)")
-    .style("border", "1px solid #ddd")
-    .style("border-radius", "var(--border-radius-small)").html(`
-      <p><strong>Albums You’ve Explored:</strong></p>
-      <p>
-        You’ve listened to <strong>${
-          albums.length
-        }</strong> albums from <strong>${artistName}</strong>.<br><br>
-        <strong>Top Album:</strong> <em>${
-          topAlbum.album
-        }</em> with <strong>${topAlbum.minutes.toFixed(
-    1
-  )}</strong> total minutes.
-      </p>
-      <p><strong>Most Tracks Played:</strong> <em>${
-        albumWithMostTracks.album
-      }</em> (${albumWithMostTracks.tracks.length} unique songs).</p>
-      <p><strong>Most Returned-To:</strong> <em>${
-        mostConsistentAlbum.album
-      }</em> (listened on ${mostConsistentAlbum.daysListened} days).</p>
-    `);
-
   const hierarchy = {
     name: artistName,
     children: albums.map(([album, records]) => {
@@ -1409,13 +1459,14 @@ function updateSunburstChart(data, artistName) {
     }),
   };
 
-  const width = 350,
+  const width = 300,
     radius = width / 2;
   const partition = d3.partition().size([2 * Math.PI, radius]);
   const root = d3.hierarchy(hierarchy).sum((d) => d.value);
   partition(root);
 
-  const svg = chartContainer
+  // Build the sunburst SVG.
+  const svg = svgContainer
     .append("svg")
     .attr("width", width)
     .attr("height", width)
@@ -1439,12 +1490,10 @@ function updateSunburstChart(data, artistName) {
       let current = d;
       while (current.depth > 1) current = current.parent;
       const albumName = current.data.name;
-
       if (!albumColorMap.has(albumName)) {
         const index = hashStringToIndex(albumName, colorScale.range().length);
         albumColorMap.set(albumName, colorScale(index));
       }
-
       return albumColorMap.get(albumName);
     })
     .attr("stroke", "#fff")
@@ -1478,6 +1527,7 @@ function updateSunburstChart(data, artistName) {
     .on("click", function (event, d) {
       if (d.depth === 1) {
         drillDownState.selectedAlbum = d.data.name;
+        // Update arc styling for selection.
         paths
           .transition()
           .duration(200)
@@ -1506,7 +1556,9 @@ function updateSunburstChart(data, artistName) {
               ? 4
               : 1
           );
-        updateAlbumDistribution(artistData);
+
+        // Update the album info but keep the container visible.
+        updateAlbumInfo(d.data.name, artistData);
       }
     });
 
@@ -1521,18 +1573,145 @@ function updateSunburstChart(data, artistName) {
         .duration(200)
         .style("opacity", 0)
     );
+
+  if (drillDownState.selectedAlbum) {
+    paths
+      .transition()
+      .duration(200)
+      .attr("fill", function (p) {
+        if (
+          p
+            .ancestors()
+            .find(
+              (a) =>
+                a.depth === 1 && a.data.name === drillDownState.selectedAlbum
+            )
+        ) {
+          let albumNode = p.ancestors().find((a) => a.depth === 1);
+          return albumColorMap.get(albumNode.data.name);
+        }
+        return "#f5f5f5";
+      })
+      .attr("stroke", (p) =>
+        p.depth === 1 && p.data.name === drillDownState.selectedAlbum
+          ? "#000"
+          : "#fff"
+      )
+      .attr("stroke-width", (p) =>
+        p.depth === 1 && p.data.name === drillDownState.selectedAlbum ? 4 : 1
+      );
+    updateAlbumInfo(drillDownState.selectedAlbum, artistData);
+  }
 }
 
-const albumColorMap = new Map();
-const colorScale = d3.scaleOrdinal(d3.schemeSet2);
+function updateAlbumInfo(selectedAlbum, artistData) {
+  const infoContainer = d3
+    .select("#sunburstChart")
+    .select("div.sunburstFlex")
+    .select("div.albumInfo")
+    .style("background", "rgba(76, 175, 79, 0.1)")
+    .style("width", "40%");
 
-function hashStringToIndex(str, range) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0; // Convert to 32bit int
+  // Make sure the album info container is visible.
+  infoContainer.style("display", "block");
+
+  // Show a loading state.
+  infoContainer.html(
+    "<p style='text-align:center; color:#555; font-style:italic;'>Loading album details…</p>"
+  );
+
+  // Filter data for the selected album.
+  const filtered = artistData.filter(
+    (d) =>
+      d.master_metadata_album_album_name.toLowerCase() ===
+      selectedAlbum.toLowerCase()
+  );
+
+  if (filtered.length === 0) {
+    infoContainer.html(
+      "<p class='empty-message'>No details available for the selected album.</p>"
+    );
+    return;
   }
-  return Math.abs(hash) % range;
+
+  // Compute album statistics.
+  const totalAlbumPlays = filtered.length;
+  const totalAlbumMinutes = d3.sum(filtered, (d) => +d.ms_played / 60000);
+  const dates = filtered.map((d) => new Date(d.ts));
+  const minDate = new Date(Math.min(...dates));
+
+  // Group by year to find peak listening.
+  const listensByYear = d3.rollups(
+    filtered,
+    (v) => d3.sum(v, (d) => +d.ms_played / 60000),
+    (d) => new Date(d.ts).getFullYear()
+  );
+  listensByYear.sort((a, b) => b[1] - a[1]);
+  const peakYear = listensByYear.length ? listensByYear[0][0] : "N/A";
+  const peakYearMinutes = listensByYear.length ? listensByYear[0][1] : 0;
+
+  // Clear the info container and append header and details.
+  infoContainer.html(""); // Clear any loading message
+
+  // Append header container.
+  const headerContainer = infoContainer
+    .append("div")
+    .attr("class", "albumHeader")
+    .style("display", "flex")
+    .style("justify-content", "space-between");
+
+  headerContainer.append("h3").text(selectedAlbum);
+
+  headerContainer
+    .append("button")
+    .attr("class", "button")
+    .text("X")
+    .style("cursor", "pointer")
+    .on("click", () => {
+      drillDownState.selectedAlbum = null;
+      // Instead of removing the album info container, hide it.
+      infoContainer.html("");
+      infoContainer.style("display", "none");
+      // Reset arc styles.
+      d3.select("#sunburstChart")
+        .select("div.sunburstSVG")
+        .select("svg")
+        .selectAll("path")
+        .transition()
+        .duration(200)
+        .attr("fill", (d) => {
+          let current = d;
+          while (current.depth > 1) current = current.parent;
+          const albumName = current.data.name;
+          if (!albumColorMap.has(albumName)) {
+            const index = hashStringToIndex(
+              albumName,
+              colorScale.range().length
+            );
+            albumColorMap.set(albumName, colorScale(index));
+          }
+          return albumColorMap.get(albumName);
+        })
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1);
+    });
+
+  // Append details container.
+  const detailsContainer = infoContainer
+    .append("div")
+    .attr("class", "albumDetails");
+
+  const detailsHTML = `
+      <p style="margin:2px 0;"><strong>Album Details:</strong></p>
+      <p style="margin:2px 0;">You first listened to <em>${selectedAlbum}</em> on <strong>${minDate.toLocaleDateString()}</strong> and have played it <strong>${totalAlbumPlays} times</strong>.</p>
+      <p style="margin:2px 0;">Total listening time: <strong>${totalAlbumMinutes.toFixed(
+        1
+      )}</strong> minutes. Your peak year was <strong>${peakYear}</strong> with <strong>${peakYearMinutes.toFixed(
+    1
+  )}</strong> minutes.</p>
+  `;
+
+  detailsContainer.html(detailsHTML);
 }
 
 /***********************
@@ -1596,7 +1775,6 @@ function updateMoodSankey(data, artistName) {
     value: 0,
   });
 
-  
   const container = d3.select("#moodSankey");
   // Ensure container has relative positioning
   container.style("position", "relative");
@@ -1658,7 +1836,7 @@ function updateMoodSankey(data, artistName) {
     .attr("fill", "none")
     .attr("opacity", 0.5);
 
-    const node = svg
+  const node = svg
     .append("g")
     .selectAll("g")
     .data(sankeyNodes)
@@ -1669,11 +1847,11 @@ function updateMoodSankey(data, artistName) {
       linkSelection.attr("opacity", (link) =>
         link.source.name === d.name || link.target.name === d.name ? 1 : 0.1
       );
-  
+
       // Use d3.pointer to compute positions relative to the container
       const [x, y] = d3.pointer(event, container.node());
       tooltip
-        .style("display", "block")  // Ensure tooltip is displayed
+        .style("display", "block") // Ensure tooltip is displayed
         .html(
           `<strong>${d.name}</strong><br/>${reasonExplanations[d.name] || ""}`
         )
@@ -1685,9 +1863,7 @@ function updateMoodSankey(data, artistName) {
     })
     .on("mousemove", function (event) {
       const [x, y] = d3.pointer(event, container.node());
-      tooltip
-        .style("left", x + 10 + "px")
-        .style("top", y + 10 + "px");
+      tooltip.style("left", x + 10 + "px").style("top", y + 10 + "px");
     })
     .on("mouseout", function () {
       linkSelection.attr("opacity", 0.5);
@@ -1780,14 +1956,12 @@ function updateMoodSankey(data, artistName) {
   `);
 }
 
-
 /***********************
  * Update All Charts for Selected Artist
  ***********************/
 function updateAllCharts(data, artistName) {
   // Reset drill down state
   drillDownState.selectedYear = null;
-  drillDownState.selectedAlbum = null;
   const chartContainer = d3.select("#albumDist");
   chartContainer.html("");
   chartContainer.append("h2").text("Album Details");
@@ -1885,6 +2059,35 @@ document.getElementById("applyRangeBtn").addEventListener("click", () => {
     return date >= startDate && date <= endDate;
   });
   updateAllCharts(filteredData, currentArtistName);
+});
+
+// Toggle the Song Distribution (Scatter Plot) container
+document.getElementById("toggleSong").addEventListener("change", function () {
+  const scatterChart = document.getElementById("scatterChart");
+  if (this.checked) {
+    scatterChart.style.display = "block";
+  } else {
+    scatterChart.style.display = "none";
+  }
+});
+
+// Toggle the Album Distribution (Sunburst Chart) container
+document.getElementById("toggleAlbum").addEventListener("change", function () {
+  const sunburstChart = document.getElementById("sunburstChart");
+  if (this.checked) {
+    sunburstChart.style.display = "block";
+  } else {
+    sunburstChart.style.display = "none";
+  }
+});
+
+document.getElementById("toggleSankey").addEventListener("change", function () {
+  const sunburstChart = document.getElementById("moodSankey");
+  if (this.checked) {
+    sunburstChart.style.display = "block";
+  } else {
+    sunburstChart.style.display = "none";
+  }
 });
 
 // Load CSV and initialize

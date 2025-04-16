@@ -8,126 +8,23 @@
     <link rel="stylesheet" href="css/header.css" />
     <link rel="stylesheet" href="css/footer.css" />
     <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/button.css" />
+    <link rel="stylesheet" href="css/search-engine.css" />
+    <link rel="stylesheet" href="css/controls.css" />
+    <link rel="stylesheet" href="css/card.css" />
+    <link rel="stylesheet" href="css/table.css" />
     <!-- Include D3 -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-
-    <!-- <script src="scripts/layout.js" defer></script> -->
     <style>
-      :root {
-        --primary-color: #0d6efd;
-        --secondary-color: #dc3545; /* Example for the second artist line */
-        --background-color: #f8f9fa;
-        --card-bg: #ffffff;
-        --text-color: #343a40;
-        --border-radius: 8px;
-        --transition-speed: 0.3s;
-      }
-      .controls {
-        width: 85%;
-        margin: 0 auto 2rem;
-        padding: 1rem;
-        background-color: var(--card-bg);
-        border-radius: var(--border-radius);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        justify-content: center;
-        position: relative; /* For autocomplete positioning */
-      }
-      .controls div {
-        position: relative; /* So autocomplete dropdown can position */
-      }
-      .controls label {
-        margin-right: 0.5rem;
-        font-weight: 500;
-      }
-      .controls input,
-      .controls button {
-        padding: 0.4rem 0.6rem;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        transition: border-color var(--transition-speed);
-      }
-      .controls button {
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-        cursor: pointer;
-      }
-      .controls button:hover {
-        background-color: #0b5ed7;
-      }
       .results-container {
-        width: 85%;
+        width: 100%;
         margin: 0 auto;
         display: flex;
         gap: var(--spacing);
-        margin-bottom: var(--spacing); /* Add spacing before chart */
-      }
-      .artist-card {
-        flex: 1;
-        background-color: var(--card-bg);
-        border-radius: var(--border-radius);
-        padding: calc(var(--spacing)/2);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      }
-      .artist-card h2 {
-        margin-top: 0;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: calc(var(--spacing)/2);
-      }
-      table th,
-      table td {
-        padding: 0.5rem;
-        border: 1px solid #ddd;
-        text-align: left;
-      }
-      .empty-message {
-        text-align: center;
-        font-style: italic;
-        color: #666;
-        margin-top: 1rem;
+        margin-bottom: var(--spacing);
       }
       /* Autocomplete Dropdown Styles */
-      .autocomplete-items {
-        position: absolute;
-        border: 1px solid #ddd;
-        border-top: none;
-        z-index: 99;
-        top: 100%;
-        left: 0;
-        right: 0;
-        max-height: 150px;
-        overflow-y: auto;
-        background-color: #fff;
-      }
-      .autocomplete-items div {
-        padding: 0.5rem;
-        cursor: pointer;
-        background-color: #fff;
-        border-bottom: 1px solid #ddd;
-      }
-      .autocomplete-items div:hover,
-      .autocomplete-active {
-        background-color: #e9e9e9;
-      }
-      /* Chart Container */
-      .chart-container {
-        width: 85%;
-        margin: 0 auto;
-        background-color: var(--card-bg);
-        border-radius: var(--border-radius);
-        padding: 1rem;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      }
-      .chart-container h2 {
-        margin-top: 0;
-      }
+
       /* Axes text */
       .axis text {
         fill: #495057;
@@ -159,13 +56,10 @@
   <body>
     <div class="layout">
       <div id="header-placeholder"></div>
-
-      <!-- <h1>Spotify Listening Dashboard blabla</h1> -->
       <main class="main">
         <h1>Compare Two Artists</h1>
-
         <!-- Search and filter controls -->
-        <div class="controls">
+        <div class="artist_search controls">
           <div>
             <label for="artist1">Artist 1:</label>
             <input
@@ -193,35 +87,36 @@
             <input type="date" id="endDate" />
           </div>
           <div>
-            <button id="compareBtn">Compare</button>
+            <button id="compareBtn" class="button">Compare</button>
           </div>
         </div>
 
         <!-- Results Container -->
         <div class="results-container">
-          <div id="artist1-results" class="artist-card">
+          <div id="artist1-results" class="artist_card">
             <h2>Artist 1 Data</h2>
             <div class="content"></div>
           </div>
-          <div id="artist2-results" class="artist-card">
+          <div id="artist2-results" class="artist_card">
             <h2>Artist 2 Data</h2>
             <div class="content"></div>
           </div>
         </div>
 
         <!-- Chart Container -->
-        <div id="comparison-chart-container" class="chart-container">
-          <h2>Listening Time Comparison Over Time</h2>
-          <div id="comparison-chart"></div>
+        <div class="row">
+          <div id="comparison-chart-container" class="chart_container full_width">
+            <h2>Listening Time Comparison Over Time</h2>
+            <div id="comparison-chart"></div>
+          </div>
         </div>
       </main>
-
       <div id="footer-placeholder"></div>
     </div>
 
     <script>
       // Configuration
-      const csvUrl = "data/astrid_data.csv"; // Update this path if needed
+      const csvUrl = "data/astrid_data.csv"; // Update the path if needed
 
       // Access DOM Elements
       const artist1Input = document.getElementById("artist1");
@@ -240,28 +135,59 @@
       // For Autocomplete
       let artistList = [];
 
-      // Preload CSV to gather unique artists for autocomplete
+      // Preload CSV to compute top two listened artists and overall date range for defaults
       d3.csv(csvUrl)
         .then((data) => {
+          // Build a list for autocomplete (all unique artist names)
           artistList = Array.from(
             new Set(
               data
-                .map((d) => d.master_metadata_album_artist_name || "")
-                .filter((name) => name.trim() !== "")
+                .map((d) => (d.master_metadata_album_artist_name || "").trim())
+                .filter((name) => name !== "")
             )
           ).sort();
-          // Initialize autocomplete
+          // Initialize autocomplete for both inputs
           autocomplete(artist1Input, artistList);
           autocomplete(artist2Input, artistList);
+
+          // Compute play count per artist
+          const artistCounts = Array.from(
+            d3.rollup(
+              data,
+              (v) => v.length,
+              (d) => (d.master_metadata_album_artist_name || "").trim()
+            )
+          ).filter(([artist]) => artist !== "");
+          // Sort descending by play count
+          artistCounts.sort((a, b) => d3.descending(a[1], b[1]));
+
+          // Set the top two listened artists as defaults
+          if (artistCounts.length >= 2) {
+            artist1Input.value = artistCounts[0][0];
+            artist2Input.value = artistCounts[1][0];
+          }
+
+          // Compute the overall start (earliest) and end (latest) dates
+          const minDate = d3.min(data, (d) => new Date(d.ts));
+          const maxDate = d3.max(data, (d) => new Date(d.ts));
+          const formatDate = d3.timeFormat("%Y-%m-%d");
+          startDateInput.value = formatDate(minDate);
+          endDateInput.value = formatDate(maxDate);
+
+          // Automatically trigger the compare function so that plots and data display on load
+          compareArtists();
         })
         .catch((err) => {
-          console.error("Error loading CSV for autocomplete:", err);
+          console.error(
+            "Error loading CSV for defaults and autocomplete:",
+            err
+          );
         });
 
       // Autocomplete function
       function autocomplete(inp, arr) {
         let currentFocus;
-        inp.addEventListener("input", function (e) {
+        inp.addEventListener("input", function () {
           let a,
             b,
             i,
@@ -284,7 +210,7 @@
                 "<strong>" + arr[i].substr(0, val.length) + "</strong>";
               b.innerHTML += arr[i].substr(val.length);
               b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
-              b.addEventListener("click", function (e) {
+              b.addEventListener("click", function () {
                 inp.value = this.getElementsByTagName("input")[0].value;
                 closeAllLists();
               });
@@ -376,8 +302,7 @@
           displayResults(artist1Agg, artist1Results);
           displayResults(artist2Agg, artist2Results);
 
-          // Now draw the comparison chart
-          // drawComparisonChart(artist1Name, dataArtist1, artist2Name, dataArtist2, comparisonChartDiv);
+          // Draw the comparison chart using the stacked chart function
           drawComparisonChartStacked3(
             artist1Name,
             dataArtist1,
@@ -431,7 +356,7 @@
         };
       }
 
-      // Display aggregated results in table
+      // Display aggregated results in a table
       function displayResults(artistData, container) {
         if (!artistData || artistData.totalPlays === 0) {
           container.innerHTML = `<p class="empty-message">No data found for this artist.</p>`;
@@ -449,381 +374,7 @@
         </table>`;
       }
 
-      // === TIME-SERIES CHART ===
-      function drawComparisonChart(
-        artist1Name,
-        dataArtist1,
-        artist2Name,
-        dataArtist2,
-        container
-      ) {
-        // Clear previous chart if any
-        container.innerHTML = "";
-
-        // Check if there's any data at all
-        if (!dataArtist1.length && !dataArtist2.length) {
-          container.innerHTML = `<p class="empty-message">No data to display for both artists in this period.</p>`;
-          return;
-        }
-
-        // 1) Group each dataset by day, summing minutes
-        const dailyData1 = rollupByDay(dataArtist1);
-        const dailyData2 = rollupByDay(dataArtist2);
-
-        // If both arrays are empty, show message
-        if (!dailyData1.length && !dailyData2.length) {
-          container.innerHTML = `<p class="empty-message">No daily data found for both artists in this period.</p>`;
-          return;
-        }
-
-        // 2) Set up dimensions
-        const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-        const width = 700,
-          height = 300;
-        const chartWidth = width - margin.left - margin.right;
-        const chartHeight = height - margin.top - margin.bottom;
-
-        // 3) Create SVG
-        const svg = d3
-          .select(container)
-          .append("svg")
-          .attr("viewBox", `0 0 ${width} ${height}`)
-          .attr("preserveAspectRatio", "xMinYMid meet");
-
-        const g = svg
-          .append("g")
-          .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-        // 4) Define scales
-        // Determine x domain from min date to max date across both arrays
-        const allDates = [
-          ...dailyData1.map((d) => d.date),
-          ...dailyData2.map((d) => d.date),
-        ];
-        const xDomain = d3.extent(allDates);
-        const xScale = d3.scaleTime().domain(xDomain).range([0, chartWidth]);
-
-        // For y domain, from 0 to max minutes across both arrays
-        const allMinutes = [
-          ...dailyData1.map((d) => d.minutes),
-          ...dailyData2.map((d) => d.minutes),
-        ];
-        const yMax = d3.max(allMinutes) || 0;
-        const yScale = d3
-          .scaleLinear()
-          .domain([0, yMax])
-          .range([chartHeight, 0])
-          .nice();
-
-        // 5) Axes
-        const xAxis = d3
-          .axisBottom(xScale)
-          .ticks(6)
-          .tickFormat(d3.timeFormat("%b %d"));
-        const yAxis = d3
-          .axisLeft(yScale)
-          .ticks(5)
-          .tickFormat((d) => `${d.toFixed(0)} min`);
-
-        g.append("g")
-          .attr("class", "axis x-axis")
-          .attr("transform", `translate(0, ${chartHeight})`)
-          .call(xAxis);
-        g.append("g").attr("class", "axis y-axis").call(yAxis);
-
-        // 6) Line generator
-        const lineGen = d3
-          .line()
-          .x((d) => xScale(d.date))
-          .y((d) => yScale(d.minutes))
-          .curve(d3.curveMonotoneX);
-
-        // 7) Draw lines if we have data
-        // Artist 1 line
-        if (dailyData1.length) {
-          g.append("path")
-            .datum(dailyData1)
-            .attr("fill", "none")
-            .attr("stroke", "var(--primary-color)")
-            .attr("stroke-width", 2)
-            .attr("d", lineGen);
-        }
-        // Artist 2 line
-        if (dailyData2.length) {
-          g.append("path")
-            .datum(dailyData2)
-            .attr("fill", "none")
-            .attr("stroke", "var(--secondary-color)")
-            .attr("stroke-width", 2)
-            .attr("d", lineGen);
-        }
-
-        // 8) Optional legend
-        const legend = svg
-          .append("g")
-          .attr("class", "legend-container")
-          .attr("transform", `translate(${margin.left}, ${margin.top - 10})`);
-
-        let legendX = 0;
-        if (dailyData1.length) {
-          const item = legend
-            .append("g")
-            .attr("class", "legend-item")
-            .attr("transform", `translate(${legendX}, 0)`);
-          item.append("div");
-          item
-            .append("rect")
-            .attr("class", "legend-color-box")
-            .attr("x", 0)
-            .attr("y", -10)
-            .attr("width", 10)
-            .attr("height", 10)
-            .attr("fill", "var(--primary-color)");
-          item.append("text").attr("x", 15).attr("y", 0).text(artist1Name);
-          legendX += 100;
-        }
-        if (dailyData2.length) {
-          const item2 = legend
-            .append("g")
-            .attr("class", "legend-item")
-            .attr("transform", `translate(${legendX}, 0)`);
-          item2
-            .append("rect")
-            .attr("class", "legend-color-box")
-            .attr("x", 0)
-            .attr("y", -10)
-            .attr("width", 10)
-            .attr("height", 10)
-            .attr("fill", "var(--secondary-color)");
-          item2.append("text").attr("x", 15).attr("y", 0).text(artist2Name);
-        }
-
-        // (Optional) You could add circles/tooltip for each data point, etc.
-
-        // Helper to roll up by day => array of objects { date, minutes }
-        function rollupByDay(dataset) {
-          // Group by day
-          const rolled = d3.rollups(
-            dataset,
-            (v) => d3.sum(v, (d) => +d.ms_played || 0) / 60000, // sum ms_played => minutes
-            (d) => d3.timeDay.floor(new Date(d.ts))
-          );
-          // Convert to array of objects
-          const arr = rolled.map(([date, minutes]) => ({ date, minutes }));
-          // Sort by date
-          arr.sort((a, b) => a.date - b.date);
-          return arr;
-        }
-      }
-      /**
-       * Draw a 100% Stacked Area Chart comparing two artists' daily proportions.
-       * @param {string} artist1Name - Name of first artist (for legend).
-       * @param {Object[]} dataArtist1 - Filtered array for Artist1 (each object has .ts, .ms_played).
-       * @param {string} artist2Name - Name of second artist (for legend).
-       * @param {Object[]} dataArtist2 - Filtered array for Artist2.
-       * @param {HTMLElement} container - DOM container to append the SVG.
-       */
-      function drawComparisonChartStacked(
-        artist1Name,
-        dataArtist1,
-        artist2Name,
-        dataArtist2,
-        container
-      ) {
-        // Clear previous chart
-        container.innerHTML = "";
-
-        // If no data at all, display a message
-        if (!dataArtist1.length && !dataArtist2.length) {
-          container.innerHTML = `<p class="empty-message">No data to display for both artists in this period.</p>`;
-          return;
-        }
-
-        // 1) Aggregate data by day for each artist
-        const dailyArtist1 = aggregateByDay(dataArtist1); // => [{ date: Date, minutes: number }, ...]
-        const dailyArtist2 = aggregateByDay(dataArtist2);
-
-        // If still empty, show a message
-        if (!dailyArtist1.length && !dailyArtist2.length) {
-          container.innerHTML = `<p class="empty-message">No daily data found for both artists.</p>`;
-          return;
-        }
-
-        // 2) Merge into one combined array with shape: { date, artist1, artist2 }
-        //    so we can pass it to the stack layout.
-        const combinedDaily = combineDailyData(dailyArtist1, dailyArtist2);
-
-        // 3) Setup chart dimensions
-        const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-        const width = 700,
-          height = 300;
-        const chartWidth = width - margin.left - margin.right;
-        const chartHeight = height - margin.top - margin.bottom;
-
-        // 4) Create SVG
-        const svg = d3
-          .select(container)
-          .append("svg")
-          .attr("viewBox", `0 0 ${width} ${height}`)
-          .attr("preserveAspectRatio", "xMinYMid meet");
-
-        const g = svg
-          .append("g")
-          .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-        // 5) Build xScale from earliest to latest date
-        const xDomain = d3.extent(combinedDaily, (d) => d.date);
-        const xScale = d3.scaleTime().domain(xDomain).range([0, chartWidth]);
-
-        // For a 100% stacked area, we typically do [0,1] for y
-        const yScale = d3.scaleLinear().domain([0, 1]).range([chartHeight, 0]);
-
-        // 6) Stacked data creation
-        //    We'll have two keys: "artist1" and "artist2"
-        const stack = d3
-          .stack()
-          .keys(["artist1", "artist2"])
-          .order(d3.stackOrderNone)
-          .offset(d3.stackOffsetExpand); // <== automatically converts to percentages
-
-        // Produce layered data
-        const series = stack(combinedDaily);
-        // series is an array of layers:
-        //   series[0] => array of points for artist1,
-        //   series[1] => for artist2,
-        // each point is [startPercentage, endPercentage].
-
-        // 7) Axes
-        const xAxis = d3
-          .axisBottom(xScale)
-          .ticks(6)
-          .tickFormat(d3.timeFormat("%b %Y"));
-        const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%"));
-
-        g.append("g")
-          .attr("class", "x-axis")
-          .attr("transform", `translate(0, ${chartHeight})`)
-          .call(xAxis);
-        g.append("g").attr("class", "y-axis").call(yAxis);
-
-        // 8) Area generator
-        const area = d3
-          .area()
-          .x((d) => xScale(d.data.date))
-          .y0((d) => yScale(d[0]))
-          .y1((d) => yScale(d[1]))
-          .curve(d3.curveBasis);
-
-        // 9) For each layer, draw the area
-        // We'll define two colors for the two layers
-        // You can also store them in an object { artist1: colorA, artist2: colorB }
-        const colorScale = d3
-          .scaleOrdinal()
-          .domain(["artist1", "artist2"])
-          .range(["#1DB954", "#6f42c1"]); // e.g. green for #1, purple for #2
-
-        g.selectAll(".layer")
-          .data(series)
-          .join("path")
-          .attr("class", "layer")
-          .attr("fill", (d) => colorScale(d.key))
-          .attr("d", area);
-
-        // 10) Add a small legend
-        const legend = svg
-          .append("g")
-          .attr("class", "legend-container")
-          .attr("transform", `translate(${margin.left}, ${margin.top - 10})`);
-
-        // Create an array for the legend
-        const legendData = [
-          { key: "artist1", name: artist1Name },
-          { key: "artist2", name: artist2Name },
-        ];
-
-        let legendX = 0;
-        legend
-          .selectAll(".legend-item")
-          .data(legendData)
-          .join("g")
-          .attr("class", "legend-item")
-          .attr("transform", (d, i) => {
-            const xPos = legendX;
-            legendX += 110; // spacing
-            return `translate(${xPos}, 0)`;
-          })
-          .call((gEl) => {
-            gEl
-              .append("rect")
-              .attr("width", 12)
-              .attr("height", 12)
-              .attr("y", -10)
-              .attr("fill", (d) => colorScale(d.key));
-            gEl
-              .append("text")
-              .attr("x", 18)
-              .attr("y", 0)
-              .attr("dy", "-1px")
-              .style("font-size", "0.8rem")
-              .text((d) => d.name);
-          });
-
-        // === Helper Functions ===
-
-        /**
-         * Roll up data by day => returns array of { date: Date, minutes: number }
-         */
-        function aggregateByDay(dataset) {
-          if (!dataset || !dataset.length) return [];
-          const rolled = d3.rollups(
-            dataset,
-            (v) => d3.sum(v, (d) => +d.ms_played || 0) / 60000, // total minutes
-            (d) => d3.timeDay.floor(new Date(d.ts))
-          );
-          // Convert to array of objects
-          const arr = rolled.map(([date, minutes]) => ({ date, minutes }));
-          // Sort by date
-          arr.sort((a, b) => a.date - b.date);
-          return arr;
-        }
-
-        /**
-         * Merge two daily arrays so that each day has data for artist1 & artist2
-         * Returns an array of { date, artist1, artist2 }
-         */
-        function combineDailyData(daily1, daily2) {
-          // Index them by date (ms integer)
-          const map1 = new Map(daily1.map((d) => [+d.date, d.minutes]));
-          const map2 = new Map(daily2.map((d) => [+d.date, d.minutes]));
-
-          // Combine all unique days
-          const allDates = new Set([...map1.keys(), ...map2.keys()]);
-          const combined = [];
-          for (let msDate of allDates) {
-            const date = new Date(msDate);
-            const artist1Val = map1.get(msDate) || 0;
-            const artist2Val = map2.get(msDate) || 0;
-            combined.push({
-              date: date,
-              artist1: artist1Val,
-              artist2: artist2Val,
-            });
-          }
-          // Sort by date
-          combined.sort((a, b) => a.date - b.date);
-          return combined;
-        }
-      }
-
-      /**
-       * Draw a 100% Stacked Area Chart comparing two artists' daily proportions.
-       * When neither artist is listened to on a given day, it forces a 50/50 split.
-       * @param {string} artist1Name - Name of first artist (for legend).
-       * @param {Object[]} dataArtist1 - Filtered array for Artist1 (each object has .ts, .ms_played).
-       * @param {string} artist2Name - Name of second artist (for legend).
-       * @param {Object[]} dataArtist2 - Filtered array for Artist2.
-       * @param {HTMLElement} container - DOM container to append the SVG.
-       */
+      // === Stacked Area Chart Function: drawComparisonChartStacked3 ===
       function drawComparisonChartStacked3(
         artist1Name,
         dataArtist1,
@@ -831,108 +382,74 @@
         dataArtist2,
         container
       ) {
-        // Clear previous chart
         container.innerHTML = "";
-
-        // If no data at all, display a message
         if (!dataArtist1.length && !dataArtist2.length) {
           container.innerHTML = `<p class="empty-message">No data to display for both artists in this period.</p>`;
           return;
         }
-
-        // 1) Aggregate data by day for each artist
-        const dailyArtist1 = aggregateByDay(dataArtist1); // e.g. [{ date: Date, minutes: number }, ... ]
+        const dailyArtist1 = aggregateByDay(dataArtist1);
         const dailyArtist2 = aggregateByDay(dataArtist2);
-
-        // If still empty, show a message
         if (!dailyArtist1.length && !dailyArtist2.length) {
           container.innerHTML = `<p class="empty-message">No daily data found for both artists.</p>`;
           return;
         }
-
-        // 2) Merge into one combined array with shape: { date, artist1, artist2 }
-        //    so we can pass it to the stack layout. For days with 0 for both, use a 50/50 split.
         const combinedDaily = combineDailyData(dailyArtist1, dailyArtist2);
-
-        // 3) Setup chart dimensions
         const margin = { top: 20, right: 30, bottom: 40, left: 50 };
         const width = 700,
           height = 300;
         const chartWidth = width - margin.left - margin.right;
         const chartHeight = height - margin.top - margin.bottom;
-
-        // 4) Create SVG
         const svg = d3
           .select(container)
           .append("svg")
           .attr("viewBox", `0 0 ${width} ${height}`)
           .attr("preserveAspectRatio", "xMinYMid meet");
-
         const g = svg
           .append("g")
           .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-        // 5) Build xScale from earliest to latest date
         const xDomain = d3.extent(combinedDaily, (d) => d.date);
         const xScale = d3.scaleTime().domain(xDomain).range([0, chartWidth]);
-
-        // For a 100% stacked area, we use [0,1] for the y scale.
         const yScale = d3.scaleLinear().domain([0, 1]).range([chartHeight, 0]);
-
-        // 6) Stacked data creation using keys "artist1" and "artist2"
         const stack = d3
           .stack()
           .keys(["artist1", "artist2"])
           .order(d3.stackOrderNone)
-          .offset(d3.stackOffsetExpand); // Converts to percentages
-
+          .offset(d3.stackOffsetExpand);
         const series = stack(combinedDaily);
-
-        // 7) Axes
         const xAxis = d3
           .axisBottom(xScale)
           .ticks(6)
           .tickFormat(d3.timeFormat("%b %Y"));
         const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%"));
-
         g.append("g")
           .attr("class", "x-axis")
           .attr("transform", `translate(0, ${chartHeight})`)
           .call(xAxis);
         g.append("g").attr("class", "y-axis").call(yAxis);
-
-        // 8) Area generator
         const area = d3
           .area()
           .x((d) => xScale(d.data.date))
           .y0((d) => yScale(d[0]))
           .y1((d) => yScale(d[1]))
           .curve(d3.curveBasis);
-
-        // 9) For each layer, draw the area with designated colors
         const colorScale = d3
           .scaleOrdinal()
           .domain(["artist1", "artist2"])
           .range(["#1DB954", "#6f42c1"]);
-
         g.selectAll(".layer")
           .data(series)
           .join("path")
           .attr("class", "layer")
           .attr("fill", (d) => colorScale(d.key))
           .attr("d", area);
-
-        // 10) Add a small legend
         const legend = svg
           .append("g")
           .attr("class", "legend-container")
           .attr("transform", `translate(${margin.left}, ${margin.top - 10})`);
-
         const legendData = [
           { key: "artist1", name: artist1Name },
           { key: "artist2", name: artist2Name },
         ];
-
         let legendX = 0;
         legend
           .selectAll(".legend-item")
@@ -941,7 +458,7 @@
           .attr("class", "legend-item")
           .attr("transform", (d, i) => {
             const xPos = legendX;
-            legendX += 110; // spacing
+            legendX += 110;
             return `translate(${xPos}, 0)`;
           })
           .call((gEl) => {
@@ -959,9 +476,6 @@
               .style("font-size", "0.8rem")
               .text((d) => d.name);
           });
-
-        // --- Helper Functions ---
-
         function aggregateByDay(dataset) {
           if (!dataset || !dataset.length) return [];
           const rolled = d3.rollups(
@@ -973,8 +487,6 @@
           arr.sort((a, b) => a.date - b.date);
           return arr;
         }
-
-        // Updated combineDailyData function (see above)
         function combineDailyData(daily1, daily2) {
           const map1 = new Map(daily1.map((d) => [+d.date, d.minutes]));
           const map2 = new Map(daily2.map((d) => [+d.date, d.minutes]));
@@ -1023,7 +535,6 @@
             console.error(`Error loading component ${url}:`, error)
           );
       }
-
       // Call the component loaders immediately
       loadComponent("header.html", "header-placeholder");
       loadComponent("footer.html", "footer-placeholder");

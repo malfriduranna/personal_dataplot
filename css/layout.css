@@ -6,11 +6,6 @@
   align-items: flex-start;
 }
 
-#calendar-container {
-  min-width: 600px;
-  flex-shrink: 0;
-}
-
 #top-artists-container {
   padding: 1rem 1.5rem;
   border-radius: var(--border-radius-small);
@@ -30,7 +25,6 @@
 .row {
   margin-top: var(--spacing);
   display: flex;
-  flex-wrap: wrap;
   gap: 20px;
   width: 100%;
 }

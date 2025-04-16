@@ -7,7 +7,6 @@
   display: flex;
   gap: calc(var(--spacing) * 2);
   align-items: flex-start;
-  
 }
 
 .overview_container_card {
@@ -97,7 +96,7 @@
   appearance: none;
   background-color: white;
   border: 1px solid var(--black-color);
-  border-radius: calc(var(--border-radius)/2);
+  border-radius: calc(var(--border-radius) / 2);
   padding: 0.4rem 1rem;
   font-size: var(--font-small-size);
   cursor: pointer;
@@ -113,4 +112,15 @@
 .dropdown:hover {
   border-color: var(--black-color, #444);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.artist_card {
+  flex: 1;
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: calc(var(--spacing));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.artist_card h2 {
+  margin-top: 0;
 }
