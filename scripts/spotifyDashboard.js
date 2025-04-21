@@ -64,7 +64,7 @@ let currentCalendarHeight = 0;
 // --- Data Processing (Runs once) ---
 (async function loadData() {
     try {
-        const rawData = await d3.csv("data/spotify_listening_history.csv");
+        const rawData = await d3.csv("data/astrid_data.csv");
 
         // Detect available columns
         const columns = new Set(rawData.columns);
