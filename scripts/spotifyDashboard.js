@@ -14,7 +14,7 @@ const handleGrabAreaWidth = 10;
 const highlightColor = "rgba(108, 117, 125, 0.2)";
 
 // --- DOM Elements ---
-const yearSelect = document.getElementById('yearSelect');
+const yearSelect2 = document.getElementById('yearSelect2');
 const startDateInput = document.getElementById('startDate');
 const endDateInput = document.getElementById('endDate');
 const applyRangeBtn = document.getElementById('applyRangeBtn');
@@ -121,13 +121,13 @@ let currentCalendarHeight = 0;
         // Populate Year Select dropdown
         const years = [...new Set(allParsedData.map(d => d.ts.getFullYear()))].sort((a, b) => a - b);
         years.forEach(y => {
-            const opt = document.createElement('option'); opt.value = y; opt.textContent = y; yearSelect.appendChild(opt);
+            const opt = document.createElement('option'); opt.value = y; opt.textContent = y; yearSelect2.appendChild(opt);
         });
 
         // --- Initial Load ---
         const defaultYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
-        yearSelect.value = defaultYear;
-        yearSelect.dispatchEvent(new Event('change')); // Trigger initial load for calendar etc.
+        yearSelect2.value = defaultYear;
+        yearSelect2.dispatchEvent(new Event('change')); // Trigger initial load for calendar etc.
 
         // --- DRAW CHARTS THAT ONLY NEED TO BE DRAWN ONCE ---
         console.log("Drawing initial Timeline...");
@@ -609,8 +609,8 @@ function updateVisualization(filteredData) {
 }
 
 // --- Event Listeners ---
-yearSelect.onchange = () => {
-     const selectedYear = +yearSelect.value;
+yearSelect2.onchange = () => {
+     const selectedYear = +yearSelect2.value;
      if (!selectedYear || isNaN(selectedYear)) {
         console.warn("Invalid year selected."); updateVisualization([]); return;
      }
@@ -635,7 +635,7 @@ applyRangeBtn.onclick = () => {
         endDateInput.value = formatDateForInput(end);
     }
     const filterEnd = d3.timeDay.offset(end, 1);
-    yearSelect.value = ""; // Clear year selection
+    yearSelect2.value = ""; // Clear year selection
     const filteredByRange = allParsedData.filter(d => d.ts >= start && d.ts < filterEnd);
     updateVisualization(filteredByRange);
 };
