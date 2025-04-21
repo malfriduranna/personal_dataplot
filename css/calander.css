@@ -44,3 +44,37 @@
   fill: var(--black-color);
   font-style: italic;
 }
+
+#calendar {
+  overflow-x: auto; /* Show horizontal scrollbar only when needed */
+  /* Optional: Add some padding at the bottom if the scrollbar looks too close to elements below it */
+  /* padding-bottom: 10px; */
+
+  /* Optional: Ensure it doesn't overflow its own parent container, if applicable */
+  /* max-width: 100%; */
+}
+
+/* Optional: Style the scrollbar for better aesthetics (browser support varies) */
+#calendar::-webkit-scrollbar {
+  height: 8px; /* Height of horizontal scrollbar */
+}
+
+#calendar::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Track color */
+  border-radius: 4px;
+}
+
+#calendar::-webkit-scrollbar-thumb {
+  background: #ccc; /* Handle color */
+  border-radius: 4px;
+}
+
+#calendar::-webkit-scrollbar-thumb:hover {
+  background: #aaa; /* Handle color on hover */
+}
+
+/* For Firefox (less customizable) */
+#calendar {
+  scrollbar-width: thin; /* "auto" or "thin" */
+  scrollbar-color: #ccc #f1f1f1; /* thumb track */
+}
