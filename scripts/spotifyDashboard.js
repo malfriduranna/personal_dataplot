@@ -108,8 +108,8 @@ let currentCalendarHeight = 0;
             if (calendarDiv) calendarDiv.innerHTML = `<p class="error-message">No valid data found after processing the CSV.</p>`;
             if (filterInfoSpan) filterInfoSpan.textContent = 'No data loaded';
 
-             const timelineChart = document.getElementById('timeline-chart');
-             if (timelineChart) timelineChart.innerHTML = `<p class="empty-message">No data.</p>`;
+            //  const timelineChart = document.getElementById('timeline-chart');
+            //  if (timelineChart) timelineChart.innerHTML = `<p class="empty-message">No data.</p>`;
 
              const streamgraphChart = document.getElementById('streamgraph-chart');
              if (streamgraphChart) streamgraphChart.innerHTML = `<p class="empty-message">No data.</p>`;
@@ -145,7 +145,7 @@ let currentCalendarHeight = 0;
        }
         // --- DRAW CHARTS THAT ONLY NEED TO BE DRAWN ONCE ---
         console.log("Drawing initial Timeline...");
-        drawTimeline(allParsedData, 'timeline-chart');
+        // drawTimeline(allParsedData, 'timeline-chart');
         // REMOVED: drawSankey(allParsedData, 'sankey-chart', 10); // No longer calling Sankey
 
          // Initially clear the containers that depend on selection
@@ -183,8 +183,8 @@ let currentCalendarHeight = 0;
         if (calendarDiv) calendarDiv.innerHTML = `<p class="error-message">Error loading data. Check console for details.</p>`;
         if (filterInfoSpan) filterInfoSpan.textContent = 'Error loading data';
 
-        const timelineChart = document.getElementById('timeline-chart');
-        if (timelineChart) timelineChart.innerHTML = `<p class="error-message">Error loading data.</p>`;
+        // const timelineChart = document.getElementById('timeline-chart');
+        // if (timelineChart) timelineChart.innerHTML = `<p class="error-message">Error loading data.</p>`;
 
         const streamgraphChart = document.getElementById('streamgraph-chart');
         if (streamgraphChart) streamgraphChart.innerHTML = `<p class="error-message">Error loading data.</p>`;
@@ -560,8 +560,8 @@ function updateTimeOfDayChart(data) {
      if (width <= 0 || height <= 0) { targetDiv.innerHTML = `<p class="error-message">Container too small.</p>`; return; }
      const svg = d3.select(targetDiv).append("svg").attr("viewBox", `0 0 ${chartWidth} ${chartHeight}`).attr("preserveAspectRatio", "xMinYMid meet").append("g").attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
      const x = d3.scaleBand().range([0, width]).domain(d3.range(24)).padding(0.2); const y = d3.scaleLinear().domain([0, d3.max(completeHourData, d => d[1]) || 1]).range([height, 0]).nice();
-     svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x).tickValues(d3.range(0, 24, 3))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", chartMargin.bottom - 15).attr("fill", "currentColor").attr("text-anchor", "middle").text("Hour of Day");
-     svg.append("g").attr("class", "axis axis--y").call(d3.axisLeft(y).ticks(5).tickFormat(d => formatTime(d))).append("text").attr("class", "axis-label").attr("transform", "rotate(-90)").attr("y", 0 - chartMargin.left).attr("x", 0 - (height / 2)).attr("dy", "1em").attr("fill", "currentColor").attr("text-anchor", "middle").text("Total Listening Time");
+     svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x).tickValues(d3.range(0, 24, 3))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", chartMargin.bottom - 15).attr("text-anchor", "middle").text("Hour of Day");
+     svg.append("g").attr("class", "axis axis--y").call(d3.axisLeft(y).ticks(5).tickFormat(d => formatTime(d))).append("text").attr("class", "axis-label").attr("transform", "rotate(-90)").attr("y", 0 - chartMargin.left).attr("x", 0 - (height / 2)).attr("dy", "1em").attr("text-anchor", "middle").text("Total Listening Time");
      svg.selectAll(".bar").data(completeHourData).enter().append("rect").attr("class", "bar").attr("x", d => x(d[0])).attr("width", x.bandwidth()).attr("y", height).attr("height", 0).attr("fill", "#fd7e14").on("mouseover", (event, d) => showTooltip(event, `<b>Hour ${d[0]}</b><br>${formatTime(d[1])}`)).on("mousemove", moveTooltip).on("mouseout", hideTooltip).transition().duration(500).attr("y", d => y(d[1])).attr("height", d => Math.max(0, height - y(d[1])));
 }
 
@@ -577,8 +577,8 @@ function updateDayOfWeekChart(data) {
      if (width <= 0 || height <= 0) { targetDiv.innerHTML = `<p class="error-message">Container too small.</p>`; return; }
      const svg = d3.select(targetDiv).append("svg").attr("viewBox", `0 0 ${chartWidth} ${chartHeight}`).attr("preserveAspectRatio", "xMinYMid meet").append("g").attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
      const x = d3.scaleBand().range([0, width]).domain(d3.range(7)).padding(0.2); const y = d3.scaleLinear().domain([0, d3.max(completeDayData, d => d[1]) || 1]).range([height, 0]).nice();
-     svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x).tickFormat(d => dayOfWeekNames[d])).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", chartMargin.bottom - 15).attr("fill", "currentColor").attr("text-anchor", "middle").text("Day of Week");
-     svg.append("g").attr("class", "axis axis--y").call(d3.axisLeft(y).ticks(5).tickFormat(d => formatTime(d))).append("text").attr("class", "axis-label").attr("transform", "rotate(-90)").attr("y", 0 - chartMargin.left).attr("x", 0 - (height / 2)).attr("dy", "1em").attr("fill", "currentColor").attr("text-anchor", "middle").text("Total Listening Time");
+     svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x).tickFormat(d => dayOfWeekNames[d])).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", chartMargin.bottom - 15).attr("text-anchor", "middle").text("Day of Week");
+     svg.append("g").attr("class", "axis axis--y").call(d3.axisLeft(y).ticks(5).tickFormat(d => formatTime(d))).append("text").attr("class", "axis-label").attr("transform", "rotate(-90)").attr("y", 0 - chartMargin.left).attr("x", 0 - (height / 2)).attr("dy", "1em").attr("text-anchor", "middle").text("Total Listening Time");
      svg.selectAll(".bar").data(completeDayData).enter().append("rect").attr("class", "bar").attr("x", d => x(d[0])).attr("width", x.bandwidth()).attr("y", height).attr("height", 0).attr("fill", "#6f42c1").on("mouseover", (event, d) => showTooltip(event, `<b>${dayOfWeekNames[d[0]]}</b><br>${formatTime(d[1])}`)).on("mousemove", moveTooltip).on("mouseout", hideTooltip).transition().duration(500).attr("y", d => y(d[1])).attr("height", d => Math.max(0, height - y(d[1])));
 }
 
@@ -751,8 +751,8 @@ async function drawStreamgraph(filteredData, containerId) {
         .on("mouseover", (event, d_layer) => { const [pointerX] = d3.pointer(event, svg.node()); const hoveredDate = xScale.invert(pointerX); const bisectDate = d3.bisector(d => d.timeBin).left; const index = bisectDate(aggregatedData, hoveredDate, 1); const d0 = aggregatedData[index - 1]; const d1 = aggregatedData[index]; const closestData = (d1 && d0 && (hoveredDate - d0.timeBin > d1.timeBin - hoveredDate)) ? d1 : d0; let tooltipContent = `<b>${d_layer.key}</b><br>(No time data)`; if (closestData) { tooltipContent = `<b>Time: ${d3.timeFormat(timeFormatString)(closestData.timeBin)}</b><br>Total Listen: ${formatTime(closestData.totalMinutes)}<br><hr>`; contentTypes.forEach(type => { const percentage = (closestData[type] * 100).toFixed(1); const isHoveredType = type === d_layer.key; tooltipContent += `${isHoveredType ? '<b>' : ''}${type}: ${percentage}%${isHoveredType ? '</b>' : ''}<br>`; }); } svg.selectAll(".stream-layer").style("fill-opacity", 0.3); d3.select(event.currentTarget).style("fill-opacity", 1).attr("stroke", "#000").attr("stroke-width", 1.5); showTooltip(event, tooltipContent.trim()); })
         .on("mousemove", moveTooltip).on("mouseout", (event, d) => { svg.selectAll(".stream-layer").style("fill-opacity", 1).attr("stroke", "#fff").attr("stroke-width", 0.5); hideTooltip(); });
     let xAxisTicks; if (timeDiffDays <= 2) xAxisTicks = d3.timeHour.every(6); else if (timeDiffDays <= 14) xAxisTicks = d3.timeDay.every(1); else if (timeDiffDays <= 90) xAxisTicks = d3.timeWeek.every(1); else xAxisTicks = d3.timeMonth.every(1);
-    svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(xScale).ticks(xAxisTicks).tickFormat(d3.timeFormat(timeDiffDays > 30 ? "%b %Y" : "%a %d"))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", margin.bottom - 10).attr("fill", "currentColor").attr("text-anchor", "middle").text("Date / Time");
-    const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%")); svg.append("g").attr("class", "axis axis--y").call(yAxis).append("text").attr("class", "axis-label").attr("transform", "rotate(-90)").attr("y", 0 - margin.left).attr("x", 0 - (height / 2)).attr("dy", "1em").attr("fill", "currentColor").attr("text-anchor", "middle").text("Listening Time Rate (%)");
+    svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(xScale).ticks(xAxisTicks).tickFormat(d3.timeFormat(timeDiffDays > 30 ? "%b %Y" : "%a %d"))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", margin.bottom - 10).attr("text-anchor", "middle").text("Date / Time");
+    const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%")); svg.append("g").attr("class", "axis axis--y").call(yAxis).append("text").attr("class", "axis-label").attr("transform", "rotate(-90)").attr("y", 0 - margin.left).attr("x", 0 - (height / 2)).attr("dy", "1em").attr("text-anchor", "middle").text("Listening Time Rate (%)");
     const legendContainer = svg.append("g").attr("class", "streamgraph-legend").attr("transform", `translate(${width - 100}, ${-10})`); const legendItems = legendContainer.selectAll(".legend-item").data(contentTypes).enter().append("g").attr("class", "legend-item").attr("transform", (d, i) => `translate(0, ${i * 15})`); legendItems.append("rect").attr("x", 0).attr("y", 0).attr("width", 10).attr("height", 10).attr("fill", d => colorScale(d)); legendItems.append("text").attr("x", 15).attr("y", 5).attr("dy", "0.35em").style("font-size", "10px").text(d => d);
     const descriptionElement = container.nextElementSibling; if (descriptionElement && descriptionElement.classList.contains('chart-description')) descriptionElement.innerHTML = "Shows the proportional rate (%) of listening time between Music and Podcasts for the time period selected above.";
 }

@@ -11,7 +11,8 @@
 }
 
 .axis text {
-  fill: var(--dark-green-color);
+  fill: var(--black-color);
+  /* fill: var(--dark-green-color); */
   font-size: 0.75rem;
 }
 
