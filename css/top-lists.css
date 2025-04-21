@@ -1,0 +1,57 @@
+/* css/top-lists.css */
+
+.styled-list {
+    list-style: none; /* Remove default bullets/numbers */
+    padding-left: 0;  /* Remove default padding */
+    margin: 0;
+}
+
+.styled-list li,
+.top-list-sparkline li { /* Target generated li in sparkline too */
+    display: flex; /* Use flex for alignment */
+    justify-content: space-between; /* Space out items */
+    align-items: center; /* Align vertically */
+    padding: 0.6rem 0; /* Vertical padding */
+    border-bottom: 1px solid #eee; /* Separator line */
+    font-size: 0.95rem;
+    gap: 0.5rem; /* Space between elements within the li */
+}
+
+.styled-list li:last-child,
+.top-list-sparkline li:last-child {
+    border-bottom: none; /* No border for the last item */
+}
+
+.artist-name, .track-info {
+    font-weight: 500; /* Slightly bolder name */
+    flex-grow: 1; /* Allow name to take available space */
+    margin-right: 0.5rem; /* Space before time */
+}
+
+.artist-time, .track-time {
+    color: var(--secondary-text);
+    font-size: 0.85rem;
+    white-space: nowrap; /* Prevent time wrapping */
+    flex-shrink: 0; /* Prevent time from shrinking */
+}
+
+/* Specific styles for sparkline track list */
+.top-list-sparkline .track-info {
+    line-height: 1.3; /* Improve spacing for multi-line track/artist */
+}
+
+.top-list-sparkline .track-name {
+    display: block; /* Make track name take full line */
+    font-weight: 500;
+    color: var(--primary-text);
+}
+
+.top-list-sparkline .track-artist {
+    display: block; /* Make artist take full line */
+    font-size: 0.85rem;
+    color: var(--secondary-text);
+}
+
+.top-list-sparkline .sparkline {
+    flex-shrink: 0; /* Prevent sparkline svg from shrinking */
+}
