@@ -14,7 +14,10 @@ const handleGrabAreaWidth = 10;
 const highlightColor = "rgba(108, 117, 125, 0.2)";
 
 // --- DOM Elements ---
-const yearSelect2 = document.getElementById('yearSelect2');
+// Use the correct ID from your wrapped_page.html
+const wrappedYearSelect = document.getElementById('wrappedYearSelect');
+// Add a check to make sure it's found
+console.log("Found #wrappedYearSelect element:", wrappedYearSelect);
 const startDateInput = document.getElementById('startDate');
 const endDateInput = document.getElementById('endDate');
 const applyRangeBtn = document.getElementById('applyRangeBtn');
@@ -96,6 +99,9 @@ let currentCalendarHeight = 0;
 
         console.log(`Loaded and parsed ${allParsedData.length} valid records.`);
 
+        const years = [...new Set(allParsedData.map(d => d.ts.getFullYear()))].sort((a, b) => a - b);
+        console.log("Available years found in data:", years); 
+
         // --- CORRECTED: Handle case where no valid data is found after parsing ---
         if (allParsedData.length === 0) {
             // Check if elements exist before setting innerHTML
@@ -119,16 +125,24 @@ let currentCalendarHeight = 0;
         // --- END CORRECTION ---
 
         // Populate Year Select dropdown
-        const years = [...new Set(allParsedData.map(d => d.ts.getFullYear()))].sort((a, b) => a - b);
-        years.forEach(y => {
-            const opt = document.createElement('option'); opt.value = y; opt.textContent = y; yearSelect2.appendChild(opt);
-        });
+        // Check if the dropdown element exists before trying to append
+        if (wrappedYearSelect) {
+            years.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            wrappedYearSelect.appendChild(opt); // <<< Use wrappedYearSelect
+            });
+        } else {
+            console.error("Cannot append year options: #wrappedYearSelect not found.");
+        }
 
         // --- Initial Load ---
         const defaultYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
-        yearSelect2.value = defaultYear;
-        yearSelect2.dispatchEvent(new Event('change')); // Trigger initial load for calendar etc.
-
+        if (wrappedYearSelect) { // Check again before using
+            wrappedYearSelect.value = defaultYear;
+            wrappedYearSelect.dispatchEvent(new Event('change')); // Trigger initial load
+       }
         // --- DRAW CHARTS THAT ONLY NEED TO BE DRAWN ONCE ---
         console.log("Drawing initial Timeline...");
         drawTimeline(allParsedData, 'timeline-chart');
@@ -609,18 +623,42 @@ function updateVisualization(filteredData) {
 }
 
 // --- Event Listeners ---
-yearSelect2.onchange = () => {
-     const selectedYear = +yearSelect2.value;
-     if (!selectedYear || isNaN(selectedYear)) {
-        console.warn("Invalid year selected."); updateVisualization([]); return;
-     }
-    const yearStart = new Date(selectedYear, 0, 1);
-    const yearEndFilter = new Date(selectedYear + 1, 0, 1);
-    const filteredByYear = allParsedData.filter(d => d.ts >= yearStart && d.ts < yearEndFilter);
-    startDateInput.value = formatDateForInput(yearStart);
-    endDateInput.value = formatDateForInput(new Date(selectedYear, 11, 31));
-    updateVisualization(filteredByYear);
-};
+// --- Event Listeners ---
+if (wrappedYearSelect) { // Check before adding listener
+    wrappedYearSelect.onchange = () => {
+        // const selectedYear = +yearSelect2.value; // <<< OLD (INCORRECT)
+        const selectedYearValue = wrappedYearSelect.value; // <<< CORRECT: Get value first
+
+        // Handle empty selection (like the "-- Select Year --" option)
+        if (!selectedYearValue) {
+             console.warn("Empty year selected. Decide how to handle (e.g., show all data or do nothing).");
+             // Example: Show all data
+             // const [minDateAll, maxDateAll] = d3.extent(allParsedData, d => d.ts);
+             // if (minDateAll && maxDateAll) {
+             //     startDateInput.value = formatDateForInput(minDateAll);
+             //     endDateInput.value = formatDateForInput(maxDateAll);
+             //     updateVisualization(allParsedData);
+             // } else {
+             //     updateVisualization([]);
+             // }
+             return; // Stop processing if empty value selected
+        }
+
+        const selectedYear = +selectedYearValue; // <<< CORRECT: Convert value to number
+
+        if (!selectedYear || isNaN(selectedYear)) {
+           console.warn("Invalid year selected:", selectedYearValue); updateVisualization([]); return;
+        }
+        const yearStart = new Date(selectedYear, 0, 1);
+        const yearEndFilter = new Date(selectedYear + 1, 0, 1);
+        const filteredByYear = allParsedData.filter(d => d.ts >= yearStart && d.ts < yearEndFilter);
+        startDateInput.value = formatDateForInput(yearStart);
+        endDateInput.value = formatDateForInput(new Date(selectedYear, 11, 31));
+        updateVisualization(filteredByYear);
+    };
+} else {
+     console.error("Cannot attach change listener: #wrappedYearSelect not found.");
+}
 
 applyRangeBtn.onclick = () => {
      const startStr = startDateInput.value; const endStr = endDateInput.value;
@@ -635,7 +673,9 @@ applyRangeBtn.onclick = () => {
         endDateInput.value = formatDateForInput(end);
     }
     const filterEnd = d3.timeDay.offset(end, 1);
-    yearSelect2.value = ""; // Clear year selection
+    if (wrappedYearSelect) { // Check before setting value
+        wrappedYearSelect.value = ""; // Clear year selection
+   }
     const filteredByRange = allParsedData.filter(d => d.ts >= start && d.ts < filterEnd);
     updateVisualization(filteredByRange);
 };
