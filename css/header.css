@@ -14,15 +14,6 @@
   height: auto;
 }
 
-.button {
-  margin-right: var(--spacing);
-  background: none;
-  border: none;
-}
-.button a {
-  color: var(--spotify-color);
-}
-
 .header_nav ul {
   list-style: none;
   padding: 0;

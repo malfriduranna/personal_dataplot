@@ -15,9 +15,9 @@
     <link rel="stylesheet" href="css/top-artists.css"/>
     <link rel="stylesheet" href="css/charts.css"/>
     <link rel="stylesheet" href="css/messages.css"/>
+    <link rel="stylesheet" href="css/button.css" />
     <link rel="stylesheet" href="css/dashboard-layout.css"> <!-- NEW -->
     <link rel="stylesheet" href="css/top-lists.css"/> <!-- NEW -->
-    
   </head>
   <body>
     <div class="layout">
@@ -44,11 +44,6 @@
           <div class="top_overview" id="include-overview"></div>
         </section>
 
-        <section id="wrapped-section">
-          <h1>Spotify Listening Dashboard</h1> 
-          <div id="include-wrapped"></div>
-        </section>
-
         <!-- Tooltip Div -->
         <div id="tooltip"></div>
       </main>
@@ -73,23 +68,23 @@
         })
         .catch(error => console.error('Error loading overview:', error));
 
-      fetch("wrapped_page.html")
-        .then((response) => response.text())
-        .then((html) => {
-          const wrappedContainer = document.getElementById("include-wrapped");
-          if (wrappedContainer) {
-              const wrapped = new DOMParser().parseFromString(html, "text/html");
-              const wrappedMain = wrapped.querySelector("main"); 
-              if (wrappedMain) {
-                wrappedContainer.innerHTML = wrappedMain.innerHTML;
-                const script = document.createElement("script");
-                script.src = "scripts/spotifyDashboard.js";
-                script.type = "module";
-                setTimeout(() => document.body.appendChild(script), 0);
-              }
-          }
-        })
-        .catch(error => console.error('Error loading wrapped page:', error));
+      // fetch("wrapped_page.html")
+      //   .then((response) => response.text())
+      //   .then((html) => {
+      //     const wrappedContainer = document.getElementById("include-wrapped");
+      //     if (wrappedContainer) {
+      //         const wrapped = new DOMParser().parseFromString(html, "text/html");
+      //         const wrappedMain = wrapped.querySelector("main"); 
+      //         if (wrappedMain) {
+      //           wrappedContainer.innerHTML = wrappedMain.innerHTML;
+      //           const script = document.createElement("script");
+      //           script.src = "scripts/spotifyDashboard.js";
+      //           script.type = "module";
+      //           setTimeout(() => document.body.appendChild(script), 0);
+      //         }
+      //     }
+      //   })
+      //   .catch(error => console.error('Error loading wrapped page:', error));
     </script>
 
     <!-- Script to load Header and Footer -->

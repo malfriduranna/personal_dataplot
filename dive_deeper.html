@@ -13,9 +13,12 @@
     <link rel="stylesheet" href="css/charts.css" />
     <link rel="stylesheet" href="css/box.css" />
     <link rel="stylesheet" href="css/search-engine.css" />
+    <link rel="stylesheet" href="css/box.css" />
+    <link rel="stylesheet" href="css/checkbox.css" />
     <link rel="stylesheet" href="css/controls.css" />
     <link rel="stylesheet" href="css/tooltip.css" />
     <link rel="stylesheet" href="css/scatterplot.css" />
+    <link rel="stylesheet" href="css/button.css" />
   </head>
   <body>
     <div class="layout">
@@ -63,41 +66,49 @@
 
         <!-- Peak Listening Section Placeholder -->
         <div class="row">
-          <div id="peakListening" class="chart_container full_width">
+          <div id="peakListening" class="full_width">
             <h2>When You Listen to This Artist the Most</h2>
           </div>
         </div>
 
-        <!-- Row: Sunburst & Song Distribution -->
+        <!-- Chart Toggle Controls -->
+        <div id="chartToggles" class="row">
+          <label>
+            <input type="checkbox" id="toggleSong" checked />
+            Song Distribution
+          </label>
+          <label>
+            <input type="checkbox" id="toggleAlbum" checked />
+            Album Distribution
+          </label>
+          <label>
+            <input type="checkbox" id="toggleSankey" checked />
+            Song start and end
+          </label>
+        </div>
+
+        <!-- Row: Song Distribution (Scatter Plot) -->
         <div class="row">
-          <div id="sunburstChart" class="chart_container">
-            <h2>Album vs. Single Listening (Sunburst Chart)</h2>
+          <div id="scatterChart" class="full_width">
+            <h2>Song Distribution (Scatter Plot)</h2>
+            <p class="placeholder">Select a song to see more details</p>
+            <!-- The chart (and later info box) will be rendered here. -->
           </div>
-          <div id="albumDist" class="chart_container">
-            <h2>Album Details</h2>
-            <!-- This panel will be updated on drill–down -->
-            <p id="albumPlaceholder">
-              Select an album to see more details
-            </p>
+        </div>
+
+        <!-- Row: Album Distribution (Sunburst Chart) -->
+        <div class="row">
+          <div id="sunburstChart" class="full_width">
+            <h2>Album Distribution (Sunburst Chart)</h2>
+            <p class="placeholder">Select a album to see more details</p>
+            <!-- The sunburst chart will be rendered here. -->
           </div>
         </div>
 
         <!-- Row: Scatter Plot & Mood Sankey -->
-        <div class="row">
-          <div id="scatterChart" class="chart_container">
-            <h2>Track Listening Scatter Plot</h2>
-          </div>
-          <div id="songDist" class="chart_container">
-            <h2>Song Details</h2>
-            <!-- This panel will be updated on drill–down -->
-            <p id="songPlaceholder">
-              Select an song to see more details
-            </p>
-          </div>
-        </div>
 
         <div class="row">
-          <div id="moodSankey" class="chart_container full_width">
+          <div id="moodSankey" class="full_width">
             <h2>Track Mood Sankey Diagram</h2>
           </div>
         </div>
@@ -107,35 +118,37 @@
     </div>
 
     <!-- Tooltip container for sunburst -->
-    <div
-      id="sunburstTooltip"
-      class="sunburst_tooltip"></div>
+    <div id="sunburstTooltip" class="sunburst_tooltip"></div>
 
     <script src="scripts/deepDive.js" type="module" defer></script>
 
     <script>
       function loadComponent(url, placeholderId) {
         fetch(url)
-          .then(response => {
+          .then((response) => {
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.text();
           })
-          .then(data => {
+          .then((data) => {
             const placeholder = document.getElementById(placeholderId);
             if (placeholder) {
               placeholder.innerHTML = data;
             } else {
-              console.warn(`Placeholder element with ID '${placeholderId}' not found.`);
+              console.warn(
+                `Placeholder element with ID '${placeholderId}' not found.`
+              );
             }
           })
-          .catch(error => console.error(`Error loading component ${url}:`, error));
+          .catch((error) =>
+            console.error(`Error loading component ${url}:`, error)
+          );
       }
-    
+
       // Call the component loaders immediately
-      loadComponent('header.html', 'header-placeholder');
-      loadComponent('footer.html', 'footer-placeholder');
+      loadComponent("header.html", "header-placeholder");
+      loadComponent("footer.html", "footer-placeholder");
     </script>
   </body>
 </html>

@@ -1,0 +1,29 @@
+/* Container for the chart toggles */
+#chartToggles {
+  display: flex;
+  gap: calc(var(--spacing)*2);
+  align-items: center;
+  margin-bottom: var(--spacing); 
+  padding: calc(var(--spacing) / 2); 
+  border: 1px solid #ddd;
+  border-radius: calc(var(--border-radius-small) / 2);
+}
+
+/* Style the labels to align the checkbox with the text nicely */
+#chartToggles label {
+  font-size: var(--font-small-size);
+  color: var(--balck-color);
+  cursor: pointer; 
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing) / 2); 
+}
+
+/* Optional: Style the checkboxes */
+#chartToggles input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  /* accent-color can be used in modern browsers to recolor checkboxes */
+  accent-color: var(--spotify-color);
+}
