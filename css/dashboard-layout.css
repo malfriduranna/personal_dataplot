@@ -12,26 +12,6 @@
     --base-font-size: 16px; /* Ensure base font size */
 }
 
-body {
-    background-color: #f8f9fa; /* Light grey background */
-    font-family: sans-serif; /* Or your preferred font */
-    font-size: var(--base-font-size);
-    line-height: 1.6;
-    color: var(--primary-text);
-}
-
-.dashboard-main {
-    max-width: 1400px; /* Limit max width for large screens */
-    margin: 0 auto; /* Center the content */
-    padding: var(--section-spacing); /* Padding around the main content */
-}
-
-.dashboard-main h1 {
-    margin-bottom: var(--section-spacing);
-    text-align: center; /* Center main title */
-    font-size: 2.2rem; /* Larger main title */
-}
-
 /* Basic Card Styling */
 .card {
     background-color: var(--card-bg);
@@ -54,10 +34,7 @@ body {
     padding-bottom: 0.5rem;
 }
 
-/* Controls Section */
-.controls-section {
-    /* Uses card styles */
-}
+
 .controls.main-controls {
     display: flex;
     flex-wrap: wrap; /* Allow wrapping on smaller screens */
@@ -102,10 +79,6 @@ body {
     min-width: 300px;
 }
 
-.top-list-container {
-    /* Uses card styles */
-}
-
 /* Row Chart Sections */
 .charts-row-section {
     display: flex;
@@ -118,9 +91,6 @@ body {
 }
 
 /* Full Width Sections */
-.full-width-section {
-    /* Uses card styles */
-}
 .full-width-section .chart-container { /* If chart is nested */
     padding: 0;
     border: none;
