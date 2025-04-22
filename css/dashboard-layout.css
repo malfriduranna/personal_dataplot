@@ -1,0 +1,182 @@
+/* css/dashboard-layout.css */
+
+:root {
+    --card-bg: #ffffff;
+    --card-border-radius: 8px;
+    --card-padding: 1.5rem; /* Increased padding */
+    --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    --section-spacing: 2rem; /* Spacing between sections */
+    --primary-text: #333;
+    --secondary-text: #666;
+    --border-color: #e0e0e0;
+    --base-font-size: 16px; /* Ensure base font size */
+}
+
+body {
+    background-color: #f8f9fa; /* Light grey background */
+    font-family: sans-serif; /* Or your preferred font */
+    font-size: var(--base-font-size);
+    line-height: 1.6;
+    color: var(--primary-text);
+}
+
+.dashboard-main {
+    max-width: 1400px; /* Limit max width for large screens */
+    margin: 0 auto; /* Center the content */
+    padding: var(--section-spacing); /* Padding around the main content */
+}
+
+.dashboard-main h1 {
+    margin-bottom: var(--section-spacing);
+    text-align: center; /* Center main title */
+    font-size: 2.2rem; /* Larger main title */
+}
+
+/* Basic Card Styling */
+.card {
+    background-color: var(--card-bg);
+    border-radius: var(--card-border-radius);
+    padding: var(--card-padding);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
+}
+
+/* Section Spacing */
+.dashboard-section {
+    margin-bottom: var(--section-spacing);
+}
+
+.dashboard-section h2 {
+    margin-top: 0; /* Remove default top margin */
+    margin-bottom: 1.2rem; /* Space below section titles */
+    font-size: 1.4rem; /* Slightly larger section titles */
+    border-bottom: 1px solid var(--border-color); /* Subtle separator */
+    padding-bottom: 0.5rem;
+}
+
+/* Controls Section */
+.controls-section {
+    /* Uses card styles */
+}
+.controls.main-controls {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 1rem 1.5rem; /* Row and column gap */
+    align-items: center; /* Align items vertically */
+    padding-top: 0.5rem; /* Add some space above controls within the card */
+}
+.controls.main-controls > div {
+     display: flex; /* Align label and input nicely */
+     align-items: center;
+     gap: 0.5rem;
+}
+
+
+/* Calendar and Top Lists Section Layout */
+.calendar-top-section {
+    display: flex;
+    flex-wrap: wrap; /* Allow stacking on small screens */
+    gap: var(--section-spacing);
+}
+
+.calendar-wrapper {
+    flex: 2; /* Calendar takes more space */
+    min-width: 350px; /* Prevent it getting too small */
+}
+#calendar {
+    overflow-x: auto; /* Allow horizontal scroll if needed */
+    padding-bottom: 10px; /* Space for scrollbar */
+}
+.filter-info {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--secondary-text);
+    text-align: center;
+}
+
+.top-lists-wrapper {
+    flex: 1; /* Lists take less space */
+    display: flex;
+    flex-direction: column; /* Stack lists vertically by default */
+    gap: var(--section-spacing); /* Space between the two list cards */
+    min-width: 300px;
+}
+
+.top-list-container {
+    /* Uses card styles */
+}
+
+/* Row Chart Sections */
+.charts-row-section {
+    display: flex;
+    flex-wrap: wrap; /* Allow stacking */
+    gap: var(--section-spacing);
+}
+.charts-row-section .chart-container {
+    flex: 1; /* Each chart takes equal space */
+    min-width: 300px; /* Minimum width before wrapping */
+}
+
+/* Full Width Sections */
+.full-width-section {
+    /* Uses card styles */
+}
+.full-width-section .chart-container { /* If chart is nested */
+    padding: 0;
+    border: none;
+    box-shadow: none;
+}
+
+
+/* Chart Descriptions */
+.chart-description {
+    font-size: 0.85rem;
+    color: var(--secondary-text);
+    margin-top: 1rem;
+    text-align: center;
+}
+
+/* Tooltip - Ensure it's styled from tooltip.css */
+#tooltip {
+    /* Styles should be in tooltip.css */
+    position: absolute;
+    /* ... other styles */
+}
+
+
+/* --- RESPONSIVENESS --- */
+@media (max-width: 992px) {
+    .calendar-top-section {
+        flex-direction: column; /* Stack calendar and lists */
+    }
+    .top-lists-wrapper {
+        flex-direction: row; /* Put lists side-by-side when calendar is above */
+        flex-wrap: wrap; /* Allow lists to wrap if needed */
+    }
+     .top-lists-wrapper .top-list-container {
+        flex: 1; /* Make lists equal width when side-by-side */
+        min-width: 250px;
+    }
+    .charts-row-section {
+        flex-direction: column; /* Stack charts in rows */
+    }
+}
+
+@media (max-width: 768px) {
+     :root {
+        --card-padding: 1rem;
+        --section-spacing: 1.5rem;
+     }
+     .dashboard-main h1 {
+         font-size: 1.8rem;
+     }
+     .dashboard-section h2 {
+         font-size: 1.2rem;
+     }
+    .controls.main-controls {
+        gap: 0.8rem;
+    }
+     .top-lists-wrapper {
+        flex-direction: column; /* Stack lists again on smaller screens */
+    }
+}

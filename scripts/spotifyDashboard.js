@@ -13,14 +13,17 @@ const handleColor = "#e63946";
 const handleGrabAreaWidth = 10;
 const highlightColor = "rgba(108, 117, 125, 0.2)";
 
-// --- DOM Elements ---
-const yearSelect = document.getElementById("yearSelect");
-const startDateInput = document.getElementById("startDate");
-const endDateInput = document.getElementById("endDate");
-const applyRangeBtn = document.getElementById("applyRangeBtn");
-const calendarDiv = document.getElementById("calendar");
-const legendDiv = document.getElementById("legend");
-const topArtistsUl = document.getElementById("topArtists");
+
+// Use the correct ID from your wrapped_page.html
+const wrappedYearSelect = document.getElementById('wrappedYearSelect');
+// Add a check to make sure it's found
+console.log("Found #wrappedYearSelect element:", wrappedYearSelect);
+const startDateInput = document.getElementById('startDate');
+const endDateInput = document.getElementById('endDate');
+const applyRangeBtn = document.getElementById('applyRangeBtn');
+const calendarDiv = document.getElementById('calendar');
+const legendDiv = document.getElementById('legend');
+const topArtistsUl = document.getElementById('topArtists');
 const tooltipDiv = d3.select("#tooltip"); // Keep using d3.select for the tooltip div
 const topTracksDiv = document.getElementById("top-tracks-chart");
 const timeOfDayDiv = document.getElementById("time-of-day-chart");
@@ -72,29 +75,51 @@ let currentCalendarHeight = 0;
 
 // --- Data Processing (Runs once) ---
 (async function loadData() {
-  try {
-    const rawData = await d3.csv("data/astrid_data.csv");
 
-    // Detect available columns
-    const columns = new Set(rawData.columns);
-    const columnMapping = {
-      track_name: "master_metadata_track_name",
-      artist: "master_metadata_album_artist_name",
-      album: "master_metadata_album_album_name",
-      platform: "platform",
-      skipped: "skipped",
-      shuffle: "shuffle",
-      episode_name: "episode_name",
-      episode_show_name: "episode_show_name",
-      audiobook_title: "audiobook_title",
-      audiobook_chapter_title: "audiobook_chapter_title",
-      reason_start: "reason_start",
-      reason_end: "reason_end",
-      conn_country: "conn_country",
-    };
-    Object.keys(columnMapping).forEach((key) => {
-      requiredColumns[key] = columns.has(columnMapping[key]);
-    });
+    try {
+        const rawData = await d3.csv("data/astrid_data.csv");
+
+        // Detect available columns
+        const columns = new Set(rawData.columns);
+        const columnMapping = {
+            track_name: 'master_metadata_track_name', artist: 'master_metadata_album_artist_name',
+            album: 'master_metadata_album_album_name', platform: 'platform', skipped: 'skipped',
+            shuffle: 'shuffle', episode_name: 'episode_name', episode_show_name: 'episode_show_name',
+            audiobook_title: 'audiobook_title', audiobook_chapter_title: 'audiobook_chapter_title',
+            reason_start: 'reason_start', reason_end: 'reason_end', conn_country: 'conn_country'
+        };
+        Object.keys(columnMapping).forEach(key => {
+            requiredColumns[key] = columns.has(columnMapping[key]);
+        });
+
+        allParsedData = rawData.map(d => ({
+            ts: new Date(d.ts), ms_played: +d.ms_played, platform: d.platform,
+            conn_country: d.conn_country, artist: d.master_metadata_album_artist_name || "Unknown Artist",
+            track: requiredColumns.track_name ? (d.master_metadata_track_name || "Unknown Track") : "N/A",
+            album: d.master_metadata_album_album_name, episode_name: d.episode_name,
+            episode_show_name: d.episode_show_name, audiobook_title: d.audiobook_title,
+            audiobook_chapter_title: d.audiobook_chapter_title,
+            skipped: ['true', '1', true].includes(String(d.skipped).toLowerCase()),
+            shuffle: ['true', '1', true].includes(String(d.shuffle).toLowerCase()),
+            reason_start: d.reason_start, reason_end: d.reason_end,
+        })).filter(d =>
+            d.ts instanceof Date && !isNaN(d.ts) &&
+            typeof d.ms_played === 'number' && !isNaN(d.ms_played) && d.ms_played >= 0
+        );
+
+        console.log(`Loaded and parsed ${allParsedData.length} valid records.`);
+
+        const years = [...new Set(allParsedData.map(d => d.ts.getFullYear()))].sort((a, b) => a - b);
+        console.log("Available years found in data:", years); 
+
+        // --- CORRECTED: Handle case where no valid data is found after parsing ---
+        if (allParsedData.length === 0) {
+            // Check if elements exist before setting innerHTML
+            if (calendarDiv) calendarDiv.innerHTML = `<p class="error-message">No valid data found after processing the CSV.</p>`;
+            if (filterInfoSpan) filterInfoSpan.textContent = 'No data loaded';
+
+            //  const timelineChart = document.getElementById('timeline-chart');
+            //  if (timelineChart) timelineChart.innerHTML = `<p class="empty-message">No data.</p>`;
 
     allParsedData = rawData
       .map((d) => ({
@@ -196,9 +221,82 @@ let currentCalendarHeight = 0;
         } else {
           console.warn("⚠️ descEl does NOT have class 'chart-description'");
         }
-      } else {
-        console.warn("⚠️ descEl is null or undefined");
-      }
+
+        // --- END CORRECTION ---
+
+        // Populate Year Select dropdown
+        // Check if the dropdown element exists before trying to append
+        if (wrappedYearSelect) {
+            years.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            wrappedYearSelect.appendChild(opt); // <<< Use wrappedYearSelect
+            });
+        } else {
+            console.error("Cannot append year options: #wrappedYearSelect not found.");
+        }
+
+        // --- Initial Load ---
+        const defaultYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
+        if (wrappedYearSelect) { // Check again before using
+            wrappedYearSelect.value = defaultYear;
+            wrappedYearSelect.dispatchEvent(new Event('change')); // Trigger initial load
+       }
+        // --- DRAW CHARTS THAT ONLY NEED TO BE DRAWN ONCE ---
+        console.log("Drawing initial Timeline...");
+        // drawTimeline(allParsedData, 'timeline-chart');
+        // REMOVED: drawSankey(allParsedData, 'sankey-chart', 10); // No longer calling Sankey
+
+         // Initially clear the containers that depend on selection
+         const streamgraphContainer = document.getElementById('streamgraph-chart');
+         if (streamgraphContainer) {
+             streamgraphContainer.innerHTML = '<p class="empty-message">Select a period in the calendar above to view Music vs Podcast rate.</p>';
+             const descEl = streamgraphContainer.nextElementSibling;
+             console.log("descEl:", descEl);
+             if (descEl) {
+                console.log("descEl.classList:", descEl.classList);
+                console.log("descEl.classList.contains:", typeof descEl.classList.contains);
+            
+                if (descEl.classList.contains('chart-description')) {
+                    console.log("✅ descEl has class 'chart-description'");
+                    descEl.innerHTML = 'Select a period in the calendar above to see the Music vs Podcast rate.';
+                } else {
+                    console.warn("⚠️ descEl does NOT have class 'chart-description'");
+                }
+            } else {
+                console.warn("⚠️ descEl is null or undefined");
+            }
+         }
+         const forceGraphContainer = document.getElementById('force-graph-chart');
+         if (forceGraphContainer) {
+            forceGraphContainer.innerHTML = '<p class="empty-message">Select a period in the calendar above to view artist transitions.</p>';
+            const descEl = forceGraphContainer.nextElementSibling;
+            if (descEl && descEl.classList.contains('chart-description')) {
+                descEl.innerHTML = 'Select a period in the calendar above to view artist transitions.';
+            }
+         }
+
+    } catch (error) {
+        console.error("Error loading or processing data:", error);
+        // --- CORRECTED: Catch block ---
+        if (calendarDiv) calendarDiv.innerHTML = `<p class="error-message">Error loading data. Check console for details.</p>`;
+        if (filterInfoSpan) filterInfoSpan.textContent = 'Error loading data';
+
+        // const timelineChart = document.getElementById('timeline-chart');
+        // if (timelineChart) timelineChart.innerHTML = `<p class="error-message">Error loading data.</p>`;
+
+        const streamgraphChart = document.getElementById('streamgraph-chart');
+        if (streamgraphChart) streamgraphChart.innerHTML = `<p class="error-message">Error loading data.</p>`;
+
+        const forceGraphChart = document.getElementById('force-graph-chart');
+        if (forceGraphChart) forceGraphChart.innerHTML = `<p class="error-message">Error loading data.</p>`;
+
+        [topArtistsUl, topTracksDiv, timeOfDayDiv, dayOfWeekDiv].forEach(el => {
+            if (el) el.innerHTML = `<p class="error-message">Error loading data.</p>`;
+        });
+        // --- END CORRECTION ---
+
     }
     const forceGraphContainer = document.getElementById("force-graph-chart");
     if (forceGraphContainer) {
@@ -1233,46 +1331,62 @@ function updateVisualization(filteredData) {
 }
 
 // --- Event Listeners ---
-yearSelect.onchange = () => {
-  const selectedYear = +yearSelect.value;
-  if (!selectedYear || isNaN(selectedYear)) {
-    console.warn("Invalid year selected.");
-    updateVisualization([]);
-    return;
-  }
-  const yearStart = new Date(selectedYear, 0, 1);
-  const yearEndFilter = new Date(selectedYear + 1, 0, 1);
-  const filteredByYear = allParsedData.filter(
-    (d) => d.ts >= yearStart && d.ts < yearEndFilter
-  );
-  startDateInput.value = formatDateForInput(yearStart);
-  endDateInput.value = formatDateForInput(new Date(selectedYear, 11, 31));
-  updateVisualization(filteredByYear);
-};
+
+// --- Event Listeners ---
+if (wrappedYearSelect) { // Check before adding listener
+    wrappedYearSelect.onchange = () => {
+        // const selectedYear = +yearSelect2.value; // <<< OLD (INCORRECT)
+        const selectedYearValue = wrappedYearSelect.value; // <<< CORRECT: Get value first
+
+        // Handle empty selection (like the "-- Select Year --" option)
+        if (!selectedYearValue) {
+             console.warn("Empty year selected. Decide how to handle (e.g., show all data or do nothing).");
+             // Example: Show all data
+             // const [minDateAll, maxDateAll] = d3.extent(allParsedData, d => d.ts);
+             // if (minDateAll && maxDateAll) {
+             //     startDateInput.value = formatDateForInput(minDateAll);
+             //     endDateInput.value = formatDateForInput(maxDateAll);
+             //     updateVisualization(allParsedData);
+             // } else {
+             //     updateVisualization([]);
+             // }
+             return; // Stop processing if empty value selected
+        }
+
+        const selectedYear = +selectedYearValue; // <<< CORRECT: Convert value to number
+
+        if (!selectedYear || isNaN(selectedYear)) {
+           console.warn("Invalid year selected:", selectedYearValue); updateVisualization([]); return;
+        }
+        const yearStart = new Date(selectedYear, 0, 1);
+        const yearEndFilter = new Date(selectedYear + 1, 0, 1);
+        const filteredByYear = allParsedData.filter(d => d.ts >= yearStart && d.ts < yearEndFilter);
+        startDateInput.value = formatDateForInput(yearStart);
+        endDateInput.value = formatDateForInput(new Date(selectedYear, 11, 31));
+        updateVisualization(filteredByYear);
+    };
+} else {
+     console.error("Cannot attach change listener: #wrappedYearSelect not found.");
+}
 
 applyRangeBtn.onclick = () => {
-  const startStr = startDateInput.value;
-  const endStr = endDateInput.value;
-  const startMs = Date.parse(startStr);
-  const endMs = Date.parse(endStr);
-  let start = !isNaN(startMs) ? d3.timeDay.floor(new Date(startMs)) : null;
-  let end = !isNaN(endMs) ? d3.timeDay.floor(new Date(endMs)) : null;
-  if (!start || !end) {
-    alert("Invalid date format. Please use YYYY-MM-DD.");
-    return;
-  }
-  if (start > end) {
-    console.warn("Start date was after end date, swapping them.");
-    [start, end] = [end, start];
-    startDateInput.value = formatDateForInput(start);
-    endDateInput.value = formatDateForInput(end);
-  }
-  const filterEnd = d3.timeDay.offset(end, 1);
-  yearSelect.value = ""; // Clear year selection
-  const filteredByRange = allParsedData.filter(
-    (d) => d.ts >= start && d.ts < filterEnd
-  );
-  updateVisualization(filteredByRange);
+     const startStr = startDateInput.value; const endStr = endDateInput.value;
+     const startMs = Date.parse(startStr); const endMs = Date.parse(endStr);
+     let start = !isNaN(startMs) ? d3.timeDay.floor(new Date(startMs)) : null;
+     let end = !isNaN(endMs) ? d3.timeDay.floor(new Date(endMs)) : null;
+    if (!start || !end) { alert("Invalid date format. Please use YYYY-MM-DD."); return; }
+    if (start > end) {
+        console.warn("Start date was after end date, swapping them.");
+        [start, end] = [end, start];
+        startDateInput.value = formatDateForInput(start);
+        endDateInput.value = formatDateForInput(end);
+    }
+    const filterEnd = d3.timeDay.offset(end, 1);
+    if (wrappedYearSelect) { // Check before setting value
+        wrappedYearSelect.value = ""; // Clear year selection
+   }
+    const filteredByRange = allParsedData.filter(d => d.ts >= start && d.ts < filterEnd);
+    updateVisualization(filteredByRange);
 };
 
 // ============================================== //
@@ -1400,61 +1514,53 @@ async function drawTimeline(fullData, containerId) {
 }
 
 async function drawStreamgraph(filteredData, containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = "";
-  if (!filteredData || filteredData.length === 0) {
-    container.innerHTML =
-      '<p class="empty-message">No data available for the selected period.</p>';
-    const descEl = container.nextElementSibling;
-    if (descEl && descEl.classList.contains("chart-description"))
-      descEl.innerHTML =
-        "Select a period in the calendar above to see the Music vs Podcast rate.";
-    return;
-  }
-  const streamDataProcessed = filteredData
-    .map((d) => {
-      let contentType = "Music";
-      if (d.episode_name && String(d.episode_name).trim() !== "")
-        contentType = "Podcast";
-      return { ...d, contentType: contentType };
-    })
-    .filter((d) => d.ms_played > 0);
-  if (streamDataProcessed.length === 0) {
-    container.innerHTML =
-      '<p class="empty-message">No Music or Podcast listening events found in this period.</p>';
-    return;
-  }
-  const contentTypes = ["Music", "Podcast"];
-  const [minDate, maxDate] = d3.extent(streamDataProcessed, (d) => d.ts);
-  const timeDiffDays =
-    maxDate && minDate ? (maxDate - minDate) / (1000 * 60 * 60 * 24) : 0;
-  const timeAggregator =
-    timeDiffDays > 60 ? d3.timeDay.floor : d3.timeHour.floor;
-  const timeFormatString = timeDiffDays > 60 ? "%Y-%m-%d" : "%H:%M %a %d";
-  console.log(
-    `Streamgraph: Period length ${timeDiffDays.toFixed(
-      1
-    )} days. Aggregating by ${timeDiffDays > 60 ? "Day" : "Hour"}.`
-  );
-  const aggregatedData = Array.from(
-    d3.group(streamDataProcessed, (d) => timeAggregator(d.ts)),
-    ([timeBin, values]) => {
-      const entry = { timeBin: new Date(timeBin) };
-      let totalMsPlayedInBin = 0;
-      contentTypes.forEach((type) => (entry[type] = 0));
-      values.forEach((v) => {
-        if (entry.hasOwnProperty(v.contentType)) {
-          entry[v.contentType] += v.ms_played;
-          totalMsPlayedInBin += v.ms_played;
-        }
-      });
-      entry.totalMinutes = totalMsPlayedInBin / 60000;
-      contentTypes.forEach((type) => {
-        entry[type] =
-          totalMsPlayedInBin > 0 ? entry[type] / totalMsPlayedInBin : 0;
-      });
-      return entry;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = "";
+    if (!filteredData || filteredData.length === 0) {
+        container.innerHTML = '<p class="empty-message">No data available for the selected period.</p>';
+        const descEl = container.nextElementSibling; if (descEl && descEl.classList.contains('chart-description')) descEl.innerHTML = 'Select a period in the calendar above to see the Music vs Podcast rate.';
+        return;
+    }
+    const streamDataProcessed = filteredData.map(d => { let contentType = 'Music'; if (d.episode_name && String(d.episode_name).trim() !== "") contentType = 'Podcast'; return { ...d, contentType: contentType }; }).filter(d => d.ms_played > 0);
+    if (streamDataProcessed.length === 0) { container.innerHTML = '<p class="empty-message">No Music or Podcast listening events found in this period.</p>'; return; }
+    const contentTypes = ['Music', 'Podcast'];
+    const [minDate, maxDate] = d3.extent(streamDataProcessed, d => d.ts);
+    const timeDiffDays = (maxDate && minDate) ? (maxDate - minDate) / (1000 * 60 * 60 * 24) : 0;
+    const timeAggregator = timeDiffDays > 60 ? d3.timeDay.floor : d3.timeHour.floor;
+    const timeFormatString = timeDiffDays > 60 ? "%Y-%m-%d" : "%H:%M %a %d";
+    console.log(`Streamgraph: Period length ${timeDiffDays.toFixed(1)} days. Aggregating by ${timeDiffDays > 60 ? 'Day' : 'Hour'}.`);
+    const aggregatedData = Array.from( d3.group(streamDataProcessed, d => timeAggregator(d.ts)), ([timeBin, values]) => { const entry = { timeBin: new Date(timeBin) }; let totalMsPlayedInBin = 0; contentTypes.forEach(type => entry[type] = 0); values.forEach(v => { if (entry.hasOwnProperty(v.contentType)) { entry[v.contentType] += v.ms_played; totalMsPlayedInBin += v.ms_played; } }); entry.totalMinutes = totalMsPlayedInBin / 60000; contentTypes.forEach(type => { entry[type] = (totalMsPlayedInBin > 0) ? (entry[type] / totalMsPlayedInBin) : 0; }); return entry; }).sort((a, b) => a.timeBin - b.timeBin);
+    if (aggregatedData.length === 0) { container.innerHTML = '<p class="empty-message">Could not aggregate data for proportions in this period.</p>'; return; }
+    const margin = { top: 20, right: 30, bottom: 40, left: 50 }; const containerWidth = container.clientWidth || 800; const height = 300 - margin.top - margin.bottom; const width = containerWidth - margin.left - margin.right;
+    if (width <= 0 || height <= 0) { container.innerHTML = `<p class="error-message">Container too small for chart.</p>`; return; }
+    const svg = d3.select(container).append("svg").attr("viewBox", `0 0 ${containerWidth} ${height + margin.top + margin.bottom}`).attr("preserveAspectRatio", "xMinYMid meet").append("g").attr("transform", `translate(${margin.left}, ${margin.top})`);
+    const xScale = d3.scaleTime().domain(d3.extent(aggregatedData, d => d.timeBin)).range([0, width]); const yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
+    const colorMap = { 'Music': '#1DB954', 'Podcast': '#6f42c1' }; const colorScale = d3.scaleOrdinal().domain(contentTypes).range(contentTypes.map(type => colorMap[type]));
+    const stack = d3.stack().keys(contentTypes).offset(d3.stackOffsetNone).order(d3.stackOrderInsideOut);
+    let series; try { series = stack(aggregatedData); } catch (error) { console.error("Streamgraph - Error during stacking:", error); container.innerHTML = '<p class="error-message">Error processing data for stacking.</p>'; return; }
+    if (series.length === 0 || !series[0] || series[0].length === 0) { const nonZeroTypes = contentTypes.filter(type => aggregatedData.some(d => d[type] > 0)); if (nonZeroTypes.length === 1) { console.warn(`Streamgraph - Only found data for: ${nonZeroTypes[0]}. Drawing single layer.`); series = nonZeroTypes.map(key => { const layer = aggregatedData.map((d, i) => { const point = [0, d[key]]; point.data = d; return point; }); layer.key = key; return layer; }); } else { container.innerHTML = '<p class="empty-message">No stack layers generated (no music/podcast data found?).</p>'; return; } }
+    const areaGen = d3.area().x(d => xScale(d.data.timeBin)).y0(d => yScale(d[0])).y1(d => yScale(d[1])).curve(d3.curveBasis);
+    svg.selectAll(".stream-layer").data(series).enter().append("path").attr("class", d => `stream-layer ${String(d.key).toLowerCase()}-layer`).attr("d", areaGen).attr("fill", d => colorScale(d.key)).attr("stroke", "#fff").attr("stroke-width", 0.5)
+        .on("mouseover", (event, d_layer) => { const [pointerX] = d3.pointer(event, svg.node()); const hoveredDate = xScale.invert(pointerX); const bisectDate = d3.bisector(d => d.timeBin).left; const index = bisectDate(aggregatedData, hoveredDate, 1); const d0 = aggregatedData[index - 1]; const d1 = aggregatedData[index]; const closestData = (d1 && d0 && (hoveredDate - d0.timeBin > d1.timeBin - hoveredDate)) ? d1 : d0; let tooltipContent = `<b>${d_layer.key}</b><br>(No time data)`; if (closestData) { tooltipContent = `<b>Time: ${d3.timeFormat(timeFormatString)(closestData.timeBin)}</b><br>Total Listen: ${formatTime(closestData.totalMinutes)}<br><hr>`; contentTypes.forEach(type => { const percentage = (closestData[type] * 100).toFixed(1); const isHoveredType = type === d_layer.key; tooltipContent += `${isHoveredType ? '<b>' : ''}${type}: ${percentage}%${isHoveredType ? '</b>' : ''}<br>`; }); } svg.selectAll(".stream-layer").style("fill-opacity", 0.3); d3.select(event.currentTarget).style("fill-opacity", 1).attr("stroke", "#000").attr("stroke-width", 1.5); showTooltip(event, tooltipContent.trim()); })
+        .on("mousemove", moveTooltip).on("mouseout", (event, d) => { svg.selectAll(".stream-layer").style("fill-opacity", 1).attr("stroke", "#fff").attr("stroke-width", 0.5); hideTooltip(); });
+    let xAxisTicks; if (timeDiffDays <= 2) xAxisTicks = d3.timeHour.every(6); else if (timeDiffDays <= 14) xAxisTicks = d3.timeDay.every(1); else if (timeDiffDays <= 90) xAxisTicks = d3.timeWeek.every(1); else xAxisTicks = d3.timeMonth.every(1);
+    svg.append("g").attr("class", "axis axis--x").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(xScale).ticks(xAxisTicks).tickFormat(d3.timeFormat(timeDiffDays > 30 ? "%b %Y" : "%a %d"))).append("text").attr("class", "axis-label").attr("x", width / 2).attr("y", margin.bottom - 10).attr("text-anchor", "middle").text("Date / Time");
+    const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%")); svg.append("g").attr("class", "axis axis--y").call(yAxis).append("text").attr("class", "axis-label").attr("transform", "rotate(-90)").attr("y", 0 - margin.left).attr("x", 0 - (height / 2)).attr("dy", "1em").attr("text-anchor", "middle").text("Listening Time Rate (%)");
+    const legendContainer = svg.append("g").attr("class", "streamgraph-legend").attr("transform", `translate(${width - 100}, ${-10})`); const legendItems = legendContainer.selectAll(".legend-item").data(contentTypes).enter().append("g").attr("class", "legend-item").attr("transform", (d, i) => `translate(0, ${i * 15})`); legendItems.append("rect").attr("x", 0).attr("y", 0).attr("width", 10).attr("height", 10).attr("fill", d => colorScale(d)); legendItems.append("text").attr("x", 15).attr("y", 5).attr("dy", "0.35em").style("font-size", "10px").text(d => d);
+    const descriptionElement = container.nextElementSibling; if (descriptionElement && descriptionElement.classList.contains('chart-description')) descriptionElement.innerHTML = "Shows the proportional rate (%) of listening time between Music and Podcasts for the time period selected above.";
+}
+
+
+
+
+async function drawForceGraph(filteredData, containerId, topN = 10) {
+    const container = document.getElementById(containerId);
+
+    // --- Robust Initial Checks ---
+    if (!container) {
+        console.error(`drawForceGraph Error: Container element with ID "${containerId}" not found.`);
+        return;
     }
   ).sort((a, b) => a.timeBin - b.timeBin);
   if (aggregatedData.length === 0) {

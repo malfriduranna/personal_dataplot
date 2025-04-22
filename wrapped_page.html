@@ -1,169 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spotify Dashboard - Enhanced</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="css/layout.css" />
-    <link rel="stylesheet" href="css/charts.css" />
-    <link rel="stylesheet" href="css/header.css" />
-    <link rel="stylesheet" href="css/footer.css" />
-    <link rel="stylesheet" href="css/controls.css" />
-    <link rel="stylesheet" href="css/button.css" />
-    <link rel="stylesheet" href="css/card.css" />
-    <!-- Main D3 Library -->
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <!-- D3 Sankey Library - Using UNPKG -->
-    <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
-  </head>
-  <body>
-    <header class="header">
-      <img src="img/Logo.png" class="header_logo" alt="Logo" />
-      <nav class="header_nav">
-        <ul>
-          <li>
-            <a href="https://username.github.io/personal_data/index.html"
-              >Home</a
-            >
-          </li>
-          <li><a href="wrapped_page.html">Spotify Wrapped</a></li>
-          <li><a href="compareArtists.html">Compare</a></li>
-          <li><a href="dive_deeper.html">Dive Deeper</a></li>
-          <!-- Consider making links relative if needed, e.g. "./compareArtists.html" -->
-          <!-- Or use root-relative links like "/compareArtists.html" if your server handles them -->
-        </ul>
-      </nav>
-      <button class="button"><a>Login</a></button>
-    </header>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Spotify Dashboard - Enhanced</title>
+        <!-- Link your main stylesheet -->
+        <link rel="stylesheet" href="style.css">
+        <!-- Link specific CSS for dashboard layout if needed -->
+        <link rel="stylesheet" href="css/dashboard-layout.css"> <!-- CREATE THIS FILE -->
+        <!-- Other CSS links -->
+        <link rel="stylesheet" href="css/controls.css"/>
+        <link rel="stylesheet" href="css/charts.css"/>
+        <link rel="stylesheet" href="css/messages.css"/>
+        <link rel="stylesheet" href="css/tooltip.css"/>
+        <link rel="stylesheet" href="css/top-lists.css"/> <!-- CREATE THIS FILE -->
 
-    <main>
-      <h1>Spotify Listening Dashboard</h1>
+        <!-- D3 Libraries -->
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+    </head>
+<body>
+    <main class="dashboard-main"> <!-- Add class to main -->
+        <!-- <h1>Spotify Listening Dashboard</h1> -->
 
-      <!-- Main Calendar Controls -->
-      <div class="controls main-controls">
-        <div>
-          <label for="yearSelect">Quick Select Year:</label
-          ><select id="yearSelect"></select>
-        </div>
-        <div>|</div>
-        <div>
-          <label for="startDate">Start Date:</label
-          ><input type="date" id="startDate" />
-        </div>
-        <div>
-          <label for="endDate">End Date:</label
-          ><input type="date" id="endDate" />
-        </div>
-        <button class="button" id="applyRangeBtn">Apply Range</button>
-      </div>
+        <!-- Section for Controls -->
+        <section class="dashboard-section controls-section card"> <!-- Wrap controls -->
+            <h2>View Controls</h2>
+            <div class="controls main-controls">
+                <!-- Controls content remains the same -->
+                <div>
+                    <label for="wrappedYearSelect">Quick Select Year:</label>
+                    <select id="wrappedYearSelect"></select>
+                </div>
+                <div> | </div>
+                <div><label for="startDate">Start Date:</label><input type="date" id="startDate" /></div>
+                <div><label for="endDate">End Date:</label><input type="date" id="endDate" /></div>
+                <button id="applyRangeBtn" class="button">Apply Range</button> <!-- Ensure button class -->
+            </div>
+        </section>
 
-      <!-- Calendar and Top Artists -->
-      <div class="visualization-area">
-        <div id="calendar-container" class="full_width">
-          <h2>Daily Listening Heatmap</h2>
-          <div id="calendar"></div>
-          <div id="legend"></div>
-        </div>
-      </div>
+        <!-- Section for Calendar + Top Lists -->
+        <section class="dashboard-section calendar-top-section">
+            <div class="calendar-wrapper card"> <!-- Wrap calendar in a card -->
+                <h2>Daily Listening Heatmap</h2>
+                <div id="calendar"></div>
+                <div id="legend"></div>
+                <div class="filter-info">Current Selection: <span id="current-filter-info">Loading...</span></div>
+            </div>
+            <div class="top-lists-wrapper"> <!-- New wrapper for side-by-side lists -->
+                <div class="top-list-container card" id="top-artists-container"> <!-- Card for artists -->
+                    <h2>Top 5 Artists</h2>
+                    <ul id="topArtists" class="styled-list"></ul> <!-- Add class to list -->
+                </div>
+                <div class="top-list-container card" id="top-tracks-container"> <!-- Card for tracks -->
+                    <h2>Top 5 Tracks</h2>
+                     <!-- Container for sparkline list -->
+                    <div id="top-tracks-chart" class="styled-list top-list-sparkline"></div>
+                </div>
+            </div>
+        </section>
 
-      <!-- Row for charts linked to Main View -->
-      <div class="row">
-          <!-- New wrapper for side-by-side lists -->
-          <div class="half_width card" id="top-artists-container">
-            <!-- Card for artists -->
-            <h2>Top 5 Artists</h2>
-            <ul id="topArtists" class="styled-list"></ul>
-            <!-- Add class to list -->
-          </div>
-          <div class="half_width card" id="top-artists-container">
-            <!-- Card for tracks -->
-            <h2>Top 5 Tracks</h2>
-            <!-- Container for sparkline list -->
-            <div
-              id="top-tracks-chart"
-              class="styled-list"
-            ></div>
-          </div>
-      </div>
+        <!-- Section for Timeline -->
+   
 
-      <div class="row">
-        <!-- Container ID matches CSS/JS convention -->
-        <div class="half_width" id="time-of-day-container">
-          <h2>Time of Day (in Main View)</h2>
-          <div id="time-of-day-chart"></div>
-        </div>
-        <div class="half_width" id="day-of-week-container">
-          <h2>Day of Week (in Main View)</h2>
-          <div id="day-of-week-chart"></div>
-        </div>
-      </div>
+        <!-- Section for Row Charts (Time/Day) -->
+        <section class="dashboard-section charts-row-section">
+            <div class="chart-container card" id="time-of-day-container"> <!-- Card -->
+                 <h2>Time of Day (in Main View)</h2>
+                 <div id="time-of-day-chart"></div>
+                 <p class="chart-description">Total listening time distribution by hour.</p>
+            </div>
+            <div class="chart-container card" id="day-of-week-container"> <!-- Card -->
+                 <h2>Day of Week (in Main View)</h2>
+                 <div id="day-of-week-chart"></div>
+                 <p class="chart-description">Total listening time distribution by day.</p>
+            </div>
+        </section>
 
-      <!-- ================================== -->
+         <!-- Section for Row Charts (Stream/Force) -->
+        <section class="dashboard-section charts-row-section">
+             <div class="chart-container card"> <!-- Card -->
+                <h2>Music vs Podcast Rate</h2>
+                <div id="streamgraph-chart"></div>
+                 <p class="chart-description">Proportional listening time (%) for selected period.</p>
+            </div>
+            <div class="chart-container card"> <!-- Card -->
+                <h2>Artist Transitions</h2>
+                <div id="force-graph-chart"></div>
+                <p class="chart-description">Transitions between top 10 artists in selected period.</p>
+            </div>
+        </section>
 
-      <!-- Force-Directed Artist Transition Graph (Selected Period) -->
-      <div class="chart-container">
-        <!-- Keep using chart-container -->
-        <h2>Artist Transition Graph (in Main View)</h2>
-        <!-- UPDATED TITLE -->
-        <div id="force-graph-chart"></div>
-        <!-- <<< CHANGED ID -->
-        <p class="chart-description">
-          Shows transitions between the top 10 most played artists *in the
-          selected period*. Drag nodes to rearrange.
-        </p>
-        <!-- UPDATED DESCRIPTION -->
-      </div>
+        <!-- Tooltip remains outside sections -->
+        <div id="tooltip"></div>
 
-      <!-- Content Type River Chart -->
-      <!-- Note: JS currently draws based on latest 7d, controls below are placeholders -->
-      <div class="chart-container independent-chart">
-        <h2>Content Type River</h2>
-        <!-- Placeholder Controls - JS logic needed to connect these -->
-        <div class="controls stream-controls" style="display: none">
-          <!-- Hidden for now -->
-          <div>
-            <label for="streamStartDate">Start Date:</label
-            ><input type="date" id="streamStartDate" />
-          </div>
-          <div>
-            <label for="streamEndDate">End Date:</label
-            ><input type="date" id="streamEndDate" />
-          </div>
-          <button id="streamApplyBtn">Update River</button>
-        </div>
-        <div id="streamgraph-chart"></div>
-        <!-- Target for JS -->
-        <p class="chart-description">
-          Shows the volume of listening time (minutes) by content type over the
-          past 7 days from latest data.
-        </p>
-      </div>
-
-      <!-- Sankey Chart -->
-
-      <!-- ================================ -->
-      <!-- ==== INDEPENDENT CHARTS END ==== -->
-      <!-- ================================ -->
-
-      <!-- Single Tooltip Div for all charts -->
-      <div id="tooltip"></div>
     </main>
-
-    <footer class="footer">
-      <img src="img/Logo.png" class="footer_logo" alt="Logo" />
-      <nav class="footer_nav">
-        <ul>
-          <li><a href="/about">About</a></li>
-          <li><a href="/contact">Contact</a></li>
-          <li><a href="/privacy">Privacy</a></li>
-          <!-- Consider relative or root-relative links here too -->
-        </ul>
-      </nav>
-      <p class="footer_text">© 2025 YourSiteName</p>
-    </footer>
-
-    <!-- Your custom JavaScript file loaded last -->
     <script src="scripts/spotifyDashboard.js" type="module" defer></script>
   </body>
 </html>
