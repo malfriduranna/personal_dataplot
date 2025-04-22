@@ -1,11 +1,11 @@
 .button {
-  margin-left: 10px;
+  margin-left: var(--spacing);
   padding: 10px 14px;
-  font-size: 1rem;
+  font-size: var(--font-size-small);
   border: none;
-  background-color: #1db954;
-  color: white;
-  border-radius: 6px;
+  background-color: var(--dark-green-color);
+  color: var(--white-color);
+  border-radius: var(--border-radius-small);
   cursor: pointer;
   transition: background 0.3s ease;
 }

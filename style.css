@@ -42,18 +42,10 @@ main {
   margin: 0 auto;
   min-height: 400px;
   width: 100%;
-}
-
-.layout {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.main {
   flex: 1;
   padding-bottom: 60px;
 }
+
 /* --- General Styles --- */
 
 h1 {

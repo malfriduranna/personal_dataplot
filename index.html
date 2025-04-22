@@ -42,10 +42,6 @@
           <div class="top_overview" id="include-overview"></div>
         </section>
 
-        <section id="wrapped-section">
-          <div id="include-wrapped"></div>
-        </section>
-
         <!-- Tooltip Div -->
         <div id="tooltip"></div>
       </main>
@@ -70,23 +66,23 @@
         })
         .catch(error => console.error('Error loading overview:', error));
 
-      fetch("wrapped_page.html")
-        .then((response) => response.text())
-        .then((html) => {
-          const wrappedContainer = document.getElementById("include-wrapped");
-          if (wrappedContainer) {
-              const wrapped = new DOMParser().parseFromString(html, "text/html");
-              const wrappedMain = wrapped.querySelector("main"); 
-              if (wrappedMain) {
-                wrappedContainer.innerHTML = wrappedMain.innerHTML;
-                const script = document.createElement("script");
-                script.src = "scripts/spotifyDashboard.js";
-                script.type = "module";
-                setTimeout(() => document.body.appendChild(script), 0);
-              }
-          }
-        })
-        .catch(error => console.error('Error loading wrapped page:', error));
+      // fetch("wrapped_page.html")
+      //   .then((response) => response.text())
+      //   .then((html) => {
+      //     const wrappedContainer = document.getElementById("include-wrapped");
+      //     if (wrappedContainer) {
+      //         const wrapped = new DOMParser().parseFromString(html, "text/html");
+      //         const wrappedMain = wrapped.querySelector("main"); 
+      //         if (wrappedMain) {
+      //           wrappedContainer.innerHTML = wrappedMain.innerHTML;
+      //           const script = document.createElement("script");
+      //           script.src = "scripts/spotifyDashboard.js";
+      //           script.type = "module";
+      //           setTimeout(() => document.body.appendChild(script), 0);
+      //         }
+      //     }
+      //   })
+      //   .catch(error => console.error('Error loading wrapped page:', error));
     </script>
 
     <!-- Script to load Header and Footer -->
