@@ -82,11 +82,15 @@
         </div>
         <div class="top-lists-wrapper">
           <!-- New wrapper for side-by-side lists -->
+          <!-- <div class="top-list-container card" id="top-artists-container">
+            <h2>Top 5 Artists</h2>
+            <ul id="topArtists" class="styled-list"></ul>
+          </div> -->
           <div class="top-list-container card" id="top-artists-container">
             <!-- Card for artists -->
             <h2>Top 5 Artists</h2>
-            <ul id="topArtists" class="styled-list"></ul>
-            <!-- Add class to list -->
+            <!-- REPLACE THE UL WITH THIS DIV -->
+            <div id="top-artists-chart" class="chart-container-small"></div>
           </div>
           <div class="top-list-container card" id="top-tracks-container">
             <!-- Card for tracks -->
@@ -158,6 +162,6 @@
       </nav>
       <p class="footer_text">© 2025 YourSiteName</p>
     </footer>
-    <script src="scripts/spotifyDashboardtext.js" type="module" defer></script>
+    <script src="scripts/spotifyDashboard.js" type="module" defer></script>
   </body>
 </html>
