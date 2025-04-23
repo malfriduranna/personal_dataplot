@@ -81,10 +81,6 @@
             <input type="checkbox" id="toggleAlbum" checked />
             Album Distribution
           </label>
-          <label>
-            <input type="checkbox" id="toggleSankey" checked />
-            Song start and end
-          </label>
         </div>
 
         <!-- Row: Song Distribution (Scatter Plot) -->
@@ -106,12 +102,6 @@
         </div>
 
         <!-- Row: Scatter Plot & Mood Sankey -->
-
-        <div class="row">
-          <div id="moodSankey" class="full_width">
-            <h2>Track Mood Sankey Diagram</h2>
-          </div>
-        </div>
       </main>
 
       <div id="footer-placeholder"></div>
@@ -120,7 +110,7 @@
     <!-- Tooltip container for sunburst -->
     <div id="sunburstTooltip" class="sunburst_tooltip"></div>
 
-    <script src="scripts/deepDive.js" type="module" defer></script>
+    <script src="scripts/deepDiveText.js" type="module" defer></script>
 
     <script>
       function loadComponent(url, placeholderId) {

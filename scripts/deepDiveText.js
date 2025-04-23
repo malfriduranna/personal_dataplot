@@ -973,26 +973,24 @@ function updateScatterPlot(data, artistName) {
       .style("flex-direction", "row");
   }
 
-  let chartDiv = flexContainer.select("div.chart_svg");
-  if (chartDiv.empty()) {
-    chartDiv = flexContainer.append("div").attr("class", "chart_svg");
-  }
+  flexContainer.select("div.chart_svg").remove();
 
-  let svgEl = chartDiv.select("svg");
-  if (svgEl.empty()) {
-    svgEl = chartDiv
-      .append("svg")
-      .attr("viewBox", "0 0 500 300")
-      .style("width", "510px")
-      .style("height", "300px");
-    svgEl = svgEl.append("g").attr("transform", "translate(30,30)");
+  let textDiv = flexContainer.select("div.textInfoBox");
+  if (textDiv.empty()) {
+    textDiv = flexContainer
+      .append("div")
+      .attr("class", "textInfoBox")
+      .style("width", "500px")
+      .style("padding", "1em")
+      .style("overflow-y", "auto")
+      .style("max-height", "400px")
+      .style("border", "1px solid var(--dark-green-color)")
+      .style("border-radius", "8px")
+      .style("box-shadow", "0 0 6px rgba(0,0,0,0.1)")
+      .style("background", "var(--white-color)");
   } else {
-    svgEl = svgEl.select("g");
+    textDiv.html("");
   }
-
-  const margin = { top: 20, right: 20, bottom: 50, left: 50 },
-    innerWidth = 500 - margin.left - margin.right,
-    innerHeight = 300 - margin.top - margin.bottom;
 
   const artistData = data.filter(
     (d) =>
@@ -1000,44 +998,12 @@ function updateScatterPlot(data, artistName) {
       d.master_metadata_album_artist_name.toLowerCase() ===
         artistName.toLowerCase()
   );
+
   const trackStats = d3
     .rollups(
       artistData,
       (v) => {
         const totalMinutes = d3.sum(v, (d) => +d.ms_played / 60000);
-        const dayMap = d3.rollup(
-          v,
-          (vv) => d3.sum(vv, (d) => +d.ms_played / 60000),
-          (d) => new Date(d.ts).toLocaleDateString()
-        );
-        let mostPlayedDay = "",
-          mostMinutesInDay = 0;
-        dayMap.forEach((minutes, day) => {
-          if (minutes > mostMinutesInDay) {
-            mostMinutesInDay = minutes;
-            mostPlayedDay = day;
-          }
-        });
-
-        const dayCount = dayMap.size;
-        const periodCount = { Morning: 0, Afternoon: 0, Evening: 0, Night: 0 };
-        v.forEach((d) => {
-          const hour = new Date(d.ts).getHours();
-          let period = "";
-          if (hour >= 5 && hour < 12) period = "Morning";
-          else if (hour >= 12 && hour < 17) period = "Afternoon";
-          else if (hour >= 17 && hour < 21) period = "Evening";
-          else period = "Night";
-          periodCount[period]++;
-        });
-        let mostFrequentPeriod = "",
-          maxPeriodCount = 0;
-        for (const period in periodCount) {
-          if (periodCount[period] > maxPeriodCount) {
-            maxPeriodCount = periodCount[period];
-            mostFrequentPeriod = period;
-          }
-        }
 
         const yearMap = d3.rollup(
           v,
@@ -1053,14 +1019,41 @@ function updateScatterPlot(data, artistName) {
           }
         });
 
-        const maxMinutes = d3.max(Array.from(dayMap.values()));
+        const periodCount = { Morning: 0, Afternoon: 0, Evening: 0, Night: 0 };
+        v.forEach((d) => {
+          const hour = new Date(d.ts).getHours();
+          let period = "";
+          if (hour >= 5 && hour < 12) period = "Morning";
+          else if (hour >= 12 && hour < 17) period = "Afternoon";
+          else if (hour >= 17 && hour < 21) period = "Evening";
+          else period = "Night";
+          periodCount[period]++;
+        });
+        let mostFrequentPeriod = Object.entries(periodCount).reduce((a, b) =>
+          a[1] > b[1] ? a : b
+        )[0];
+
+        const dayMap = d3.rollup(
+          v,
+          (vv) => d3.sum(vv, (d) => +d.ms_played / 60000),
+          (d) => new Date(d.ts).toDateString()
+        );
+        let maxDay = "",
+          maxMinutes = 0;
+        dayMap.forEach((minutes, day) => {
+          if (minutes > maxMinutes) {
+            maxMinutes = minutes;
+            maxDay = day;
+          }
+        });
+
         return {
           totalMinutes,
-          maxMinutes,
-          dayCount,
-          mostPlayedDay,
+          maxMinutesYear: mostMinutesInYear,
           mostFrequentPeriod,
           mostPlayedYear,
+          mostPlayedDay: maxDay,
+          maxMinutes,
         };
       },
       (d) => d.master_metadata_track_name
@@ -1076,195 +1069,125 @@ function updateScatterPlot(data, artistName) {
       };
     });
 
-  const maxMinutesThreshold = d3.quantile(
-    trackStats.map((d) => d.maxMinutes).sort(d3.ascending),
-    0.99
-  );
-  const totalMinutesThreshold = d3.quantile(
-    trackStats.map((d) => d.totalMinutes).sort(d3.ascending),
-    0.99
-  );
-  const outliers = trackStats.filter(
-    (d) =>
-      d.maxMinutes > maxMinutesThreshold ||
-      d.totalMinutes > totalMinutesThreshold
-  );
+  const mostLoyal = d3.max(trackStats, (d) => d.totalMinutes);
+  const mostBinge = d3.max(trackStats, (d) => d.maxMinutesYear);
+  const loyalTrack = trackStats.find((d) => d.totalMinutes === mostLoyal);
+  const bingeTrack = trackStats.find((d) => d.maxMinutesYear === mostBinge);
 
-  const x = d3
-    .scaleLinear()
-    .domain([0, d3.max(trackStats, (d) => d.totalMinutes)])
-    .nice()
-    .range([0, innerWidth]);
-  const y = d3
-    .scaleLinear()
-    .domain([0, d3.max(trackStats, (d) => d.maxMinutes)])
-    .nice()
-    .range([innerHeight, 0]);
+  textDiv
+    .append("div")
+    .style("margin-bottom", "1em")
+    .html(
+      `<p style="margin:0">Your most <strong>loyal song</strong> was <span class="clickable" style="color:var(--dark-green-color); cursor:pointer; font-weight:bold;">${loyalTrack.track}</span>,</p>
+       <p style="margin:0">played for a total of ${loyalTrack.totalMinutes.toFixed(1)} minutes.</p>
+       <p style="margin:0; margin-top:0.5em">Your most <strong>binge-listened</strong> song was <span class="clickable" style="font-weight:bold; color:var(--dark-green-color); cursor:pointer">${bingeTrack.track}</span>,</p>
+       <p style="margin:0">played for ${bingeTrack.maxMinutesYear.toFixed(1)} minutes in a single year.</p>`
+    )
+    .on("click", (event) => {
+      const clicked = event.target.innerText;
+      const found = trackStats.find((t) => t.track === clicked);
+      if (found) {
+        selectedTrackName = found.track;
+        updateSongDistText(found);
+      }
+    });
 
-  svgEl.selectAll(".x-axis, .y-axis, .axis-label").remove();
-  svgEl
-    .append("g")
-    .attr("class", "x-axis")
-    .attr("transform", `translate(0,${innerHeight})`)
-    .call(d3.axisBottom(x))
-    .selectAll("text")
-    .style("font-size", "8px");
-  svgEl
-    .append("g")
-    .attr("class", "y-axis")
-    .call(d3.axisLeft(y))
-    .selectAll("text")
-    .style("font-size", "8px");
+    
+  textDiv.append("h4").text("Top Played Songs:");
 
-  svgEl
-    .append("text")
-    .attr("class", "axis-label")
-    .attr("x", innerWidth)
-    .attr("y", innerHeight + 25)
-    .attr("text-anchor", "end")
-    .style("font-size", "10px")
-    .text("Total Minutes Played");
-  svgEl
-    .append("text")
-    .attr("class", "axis-label")
-    .attr("transform", "rotate(-90)")
-    .attr("y", -25)
-    .attr("x", -5)
-    .attr("text-anchor", "end")
-    .style("font-size", "9px")
-    .text("Max Minutes in a Day");
+  const dropdownContainer = textDiv.append("div").style("margin-bottom", "1em");
+  dropdownContainer.append("label").text("Sort by: ").style("margin-right", "0.5em");
+  const sortSelect = dropdownContainer
+    .append("select")
+    .style("padding", "0.25em");
 
-  const circles = svgEl.selectAll("circle").data(trackStats, (d) => d.track);
-  circles.join(
-    (enter) =>
-      enter
-        .append("circle")
-        .attr("cx", (d) => x(d.totalMinutes))
-        .attr("cy", (d) => y(d.maxMinutes))
-        .attr("r", 0)
-        .attr("fill", "#69b3a2")
-        .attr("opacity", 0.7)
-        .style("cursor", "pointer")
-        .on("click", (event, d) => {
-          selectedTrackName = d.track;
-          // PLOT -------------------
-          const rawData = artistData.filter(
-            (e) => e.master_metadata_track_name === d.track
+  sortSelect
+    .selectAll("option")
+    .data([
+      { key: "totalMinutes", label: "Most Loyal" },
+      { key: "maxMinutesYear", label: "Most Binged" },
+    ])
+    .enter()
+    .append("option")
+    .attr("value", (d) => d.key)
+    .text((d) => d.label);
+
+  const gridContainer = textDiv
+    .append("div")
+    .style("display", "grid")
+    .style("grid-template-columns", "1fr 1fr")
+    .style("gap", "1em");
+
+  function renderTopSongs(sortKey = "totalMinutes") {
+    gridContainer.html("");
+    trackStats
+      .sort((a, b) => d3.descending(a[sortKey], b[sortKey]))
+      .slice(0, 4)
+      .forEach((d, i) => {
+        const entry = gridContainer
+          .append("div")
+          .style("margin-bottom", "0.75em")
+          .style("cursor", "pointer")
+          .style("border", "1px solid #ccc")
+          .style("padding", "0.5em")
+          .style("border-radius", "5px")
+          .on("click", () => {
+            selectedTrackName = d.track;
+            updateSongDistText(d);
+          });
+
+        entry
+          .append("div")
+          .style("font-weight", "bold")
+          .style("font-size", "12px")
+          .style("color", "var(--dark-green-color)")
+          .text(`${i + 1}. ${d.track}`);
+
+        entry
+          .append("div")
+          .style("font-size", "10px")
+          .html(
+            `<p style="margin:0">Total Played: ${d.totalMinutes.toFixed(1)} mins</p>
+             <p style="margin:0">Max in a Year: ${d.maxMinutesYear.toFixed(1)} mins</p>`
           );
-          updateSongDistPlot({ ...d, rawData });
-
-          svgEl
-            .selectAll("circle")
-            .attr("fill", (d) =>
-              d.track === selectedTrackName ? "#ff9800" : "#69b3a2"
-            );
-        })
-        .on("mouseover", (event, d) => {
-          tooltip.transition().duration(200).style("opacity", 0.9);
-          tooltip
-            .html(d.track)
-            .style("left", event.pageX + 10 + "px")
-            .style("top", event.pageY - 28 + "px")
-            .style("cursor", "pointer");
-        })
-        .on("mousemove", (event) => {
-          tooltip
-            .style("left", event.pageX + 10 + "px")
-            .style("top", event.pageY - 28 + "px");
-        })
-        .on("mouseout", () => {
-          tooltip.transition().duration(500).style("opacity", 0);
-        })
-        .call((enter) => enter.transition().duration(800).attr("r", 4)),
-    (update) =>
-      update.call((update) =>
-        update
-          .transition()
-          .duration(800)
-          .attr("cx", (d) => x(d.totalMinutes))
-          .attr("cy", (d) => y(d.maxMinutes))
-      ),
-    (exit) =>
-      exit.call((exit) => exit.transition().duration(800).attr("r", 0).remove())
-  );
-
-  const labels = svgEl.selectAll(".label").data(outliers, (d) => d.track);
-  labels.join(
-    (enter) =>
-      enter
-        .append("text")
-        .attr("class", "label")
-        .attr("x", (d) => x(d.totalMinutes) + 8)
-        .attr("y", (d) => y(d.maxMinutes))
-        .attr("dy", "0.35em")
-        .attr("text-anchor", "start")
-        .text((d) => d.track)
-        .style("font-size", "10px")
-        .style("fill", "#333")
-        .style("opacity", 0)
-        .each(function () {
-          wrapText(d3.select(this), 50);
-        })
-        .call((enter) => enter.transition().duration(800).style("opacity", 1)),
-    (update) =>
-      update
-        .text((d) => d.track) // force update
-        .attr("x", (d) => x(d.totalMinutes) + 8)
-        .attr("y", (d) => y(d.maxMinutes))
-        .attr("dy", "0.35em")
-        .attr("text-anchor", "start")
-        .each(function () {
-          wrapText(d3.select(this), 50); // re-wrap
-        })
-        .call((update) => update.transition().duration(800)),
-    (exit) =>
-      exit.call((exit) =>
-        exit.transition().duration(800).style("opacity", 0).remove()
-      )
-  );
-
-  let tooltip = d3.select("body").select(".tooltip");
-  if (tooltip.empty()) {
-    tooltip = d3
-      .select("body")
-      .append("div")
-      .attr("class", "tooltip")
-      .style("position", "absolute")
-      .style("padding", "4px 8px")
-      .style("background", "rgba(0, 0, 0, 0.7)")
-      .style("color", "#fff")
-      .style("border-radius", "4px")
-      .style("pointer-events", "none")
-      .style("opacity", 0);
+      });
   }
 
+  sortSelect.on("change", function () {
+    renderTopSongs(this.value);
+  });
+
+  renderTopSongs();
+
   if (selectedTrackName) {
-    const updatedTrack = trackStats.find((t) => t.track === selectedTrackName);
-    if (updatedTrack) {
-      // PLOT -------------------
-      const rawData = artistData.filter(
-        (e) => e.master_metadata_track_name === updatedTrack.track
-      );
-      updateSongDistPlot({ ...updatedTrack, rawData });
-    }
+    const selected = trackStats.find((t) => t.track === selectedTrackName);
+    if (selected) updateSongDistText(selected);
   }
 }
 
-function updateSongDistPlot(trackData) {
+
+/**
+ * updateSongDist displays (or updates) an info box for the selected track.
+ * It shows a loading state before the details are loaded.
+ */
+function updateSongDistText(trackData) {
+  // Select the flex container that holds both the chart and the info box.
   const flexContainer = d3.select("#scatterChart").select("div.chartAndInfo");
   const svgEl = d3.select("#scatterChart").select("svg").select("g");
-
+  // Remove any existing info box.
   flexContainer.selectAll("div.infoDiv").remove();
 
+  // Append a new info box.
   const infoDiv = flexContainer
     .append("div")
     .attr("class", "infoDiv")
     .style("display", "flex")
     .style("flex-direction", "column")
-    .style("justify-content", "space-between")
     .style("margin-top", "10px")
+    .style("margin-left", "var(--spacing)")
     .style("flex", "1");
 
+  // Immediately show a loading state.
   infoDiv
     .html("<p>Loading details…</p>")
     .style("text-align", "center")
@@ -1273,9 +1196,10 @@ function updateSongDistPlot(trackData) {
 
   let artistImageUrl = "";
 
+  // Helper function to render the song details.
   function renderDetails() {
+    // Clear the loading state.
     infoDiv.html("");
-
     const infoContent = infoDiv
       .append("div")
       .attr("class", "infoContent")
@@ -1291,8 +1215,8 @@ function updateSongDistPlot(trackData) {
       .style("flex", "1")
       .style("display", "flex")
       .style("flex-direction", "row");
-
     if (artistImageUrl) {
+      // Insert the track image at the top.
       headerContent
         .insert("img", ":first-child")
         .attr("src", artistImageUrl)
@@ -1302,374 +1226,54 @@ function updateSongDistPlot(trackData) {
         .style("border-radius", "var(--border-radius)")
         .style("height", "auto");
     }
-
     headerContent
       .append("h3")
       .style("margin-left", "var(--spacing)")
       .text(trackData.track);
-
     infoContent
       .append("button")
       .attr("class", "button")
       .text("X")
       .style("cursor", "pointer")
       .on("click", () => {
+        // Clear selected track
         selectedTrackName = null;
+
+        // Reset all dots to default color
         svgEl.selectAll("circle").attr("fill", "#69b3a2");
+
+        // Optionally also hide the selection ring
         svgEl.selectAll(".selected-circle").style("opacity", 0);
+
+        // Remove song details panel
         flexContainer.selectAll("div.infoDiv").remove();
       });
-
-    const plotContainer = infoDiv
+    const songInfoDiv = infoDiv
       .append("div")
-      .attr("class", "songPlotContainer")
+      .attr("class", "songInfoDiv")
+      .style("display", "flex")
+      .style("margin", "auto");
+    songInfoDiv
+      .append("div")
       .style("padding", "var(--spacing)")
       .style("background", "rgba(76, 175, 79, 0.1)")
       .style("border-radius", "var(--border-radius-small)")
       .style("border", "1px solid rgb(221, 221, 221)")
-      .style("font-size", "var(--font-small-size)");
-
-    drawSongPlot(plotContainer, trackData);
+      .style("font-size", "var(--font-small-size)")
+      .html(
+        `<p>You have listened to this track for a total of <strong>${trackData.totalMinutes.toFixed(
+          1
+        )} minutes</strong>.</p>` +
+          `<p>On <strong>${
+            trackData.mostPlayedDay
+          }</strong> you played the song at its peak, reaching <strong>${trackData.maxMinutes.toFixed(
+            1
+          )} minutes</strong> in a single day.</p>` +
+          `<p>The year in which you enjoyed it most was <strong>${trackData.mostPlayedYear}</strong>, and you tend to listen most often during the <strong>${trackData.mostFrequentPeriod}</strong>.</p>`
+      );
   }
 
-  function drawSongPlot(container, trackData) {
-    container.html("");
-
-    const width = 250,
-      height = 100,
-      margin = { top: 5, right: 20, bottom: 32, left: 40 },
-      cellSize = 15;
-
-    // Toggle buttons for switching views
-    const toggleWrapper = container.append("div").style("margin-bottom", "8px");
-    toggleWrapper.html(`
-        <label style="font-size:12px;margin-right:10px;">
-          <input type="radio" name="viewMode" value="line" checked> Line Graph
-        </label>
-        <label style="font-size:12px;">
-          <input type="radio" name="viewMode" value="heatmap"> Heatmap
-        </label>
-      `);
-
-    const plotDiv = container.append("div");
-
-    const drawLine = () => {
-      plotDiv.html("");
-
-      const width = 240;
-      const height = 85;
-      const margin = { top: 5, right: 10, bottom: 15, left: 15 };
-
-      const svg = plotDiv
-        .append("svg")
-        .attr("viewBox", `0 0 ${width} ${height}`)
-        .attr("preserveAspectRatio", "xMidYMid meet")
-        .style("width", "100%")
-        .style("height", "auto");
-
-      const group = svg
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
-
-      const innerWidth = width - margin.left - margin.right;
-      const innerHeight = height - margin.top - margin.bottom;
-
-      const extent = d3.extent(trackData.rawData, (d) => new Date(d.ts));
-      const totalDays = (extent[1] - extent[0]) / (1000 * 60 * 60 * 24);
-
-      let binFn = d3.timeMonth;
-      if (totalDays <= 30) binFn = d3.timeDay;
-      else if (totalDays <= 180) binFn = d3.timeWeek;
-
-      const grouped = d3
-        .rollups(
-          trackData.rawData,
-          (v) => d3.sum(v, (d) => +d.ms_played / 60000),
-          (d) => binFn(new Date(d.ts))
-        )
-        .map(([date, minutes]) => ({ date, minutes }));
-
-      grouped.sort((a, b) => a.date - b.date);
-
-      const x = d3
-        .scaleTime()
-        .domain(d3.extent(grouped, (d) => d.date))
-        .range([0, innerWidth]);
-      const y = d3
-        .scaleLinear()
-        .domain([0, d3.max(grouped, (d) => d.minutes)])
-        .nice()
-        .range([innerHeight, 0]);
-
-      group
-        .append("g")
-        .attr("transform", `translate(0,${innerHeight})`)
-        .call(
-          d3
-            .axisBottom(x)
-            .ticks(5)
-            .tickFormat((d) => {
-              const date = new Date(d);
-              return date.getDate() === 1 && date.getMonth() === 0
-                ? `Jan 1 '${date.getFullYear().toString().slice(-2)}`
-                : d3.timeFormat("%b %d")(d);
-            })
-        )
-        .selectAll("text")
-        .style("font-size", "5px");
-
-      group
-        .append("g")
-        .call(d3.axisLeft(y).ticks(4))
-        .selectAll("text")
-        .style("font-size", "5px");
-
-      const area = d3
-        .area()
-        .x((d) => x(d.date))
-        .y0(innerHeight)
-        .y1((d) => y(d.minutes));
-
-      group
-        .append("path")
-        .datum(grouped)
-        .attr("fill", "rgba(255,255,255,0.6)") // whitish area
-        .attr("d", area);
-
-      const line = d3
-        .line()
-        .x((d) => x(d.date))
-        .y((d) => y(d.minutes));
-      group
-        .append("path")
-        .datum(grouped)
-        .attr("fill", "none")
-        .attr("stroke", "#4caf50")
-        .attr("stroke-width", 2)
-        .attr("d", line);
-
-      // Tooltip
-      let tooltip = d3.select("body").select(".tooltip");
-      if (tooltip.empty()) {
-        tooltip = d3
-          .select("body")
-          .append("div")
-          .attr("class", "tooltip")
-          .style("position", "absolute")
-          .style("background", "#333")
-          .style("color", "#fff")
-          .style("padding", "4px 8px")
-          .style("border-radius", "4px")
-          .style("font-size", "8px")
-          .style("pointer-events", "none")
-          .style("opacity", 0);
-      }
-
-      const bisectDate = d3.bisector((d) => d.date).left;
-      group
-        .append("rect")
-        .attr("width", innerWidth)
-        .attr("height", innerHeight)
-        .style("fill", "none")
-        .style("pointer-events", "all")
-        .on("mousemove", function (event) {
-          const [mx] = d3.pointer(event);
-          const hoveredDate = x.invert(mx);
-          const i = bisectDate(grouped, hoveredDate);
-          const d0 = grouped[i - 1],
-            d1 = grouped[i];
-          const d =
-            !d1 || hoveredDate - d0.date < d1.date - hoveredDate ? d0 : d1;
-
-          tooltip
-            .html(
-              `<p>${d3.timeFormat("%b %d, %Y")(d.date)}</p>${d.minutes.toFixed(
-                1
-              )} min`
-            )
-            .style("left", `${event.pageX + 10}px`)
-            .style("top", `${event.pageY - 28}px`)
-            .style("opacity", 1);
-        })
-        .on("mouseleave", () => tooltip.style("opacity", 0));
-    };
-
-    const drawHeatmap = () => {
-      plotDiv.html("");
-
-      const matrix = Array.from({ length: 7 }, () => Array(24).fill(0));
-      trackData.rawData.forEach((d) => {
-        const date = new Date(d.ts);
-        matrix[date.getDay()][date.getHours()] += +d.ms_played / 60000;
-      });
-
-      const maxVal = d3.max(matrix.flat());
-      const color = d3
-        .scaleSequential(d3.interpolateYlGnBu)
-        .domain([0, maxVal]);
-
-      const svgHeight = cellSize * 7 + margin.top + margin.bottom + 12;
-      const svg = plotDiv
-        .append("svg")
-        .attr("width", cellSize * 24 + margin.left + margin.right)
-        .attr("height", svgHeight);
-
-      const g = svg
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
-
-      const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      dayLabels.forEach((label, i) => {
-        g.append("text")
-          .attr("x", -5)
-          .attr("y", i * cellSize + cellSize / 1.5)
-          .attr("text-anchor", "end")
-          .style("font-size", "8px")
-          .text(label);
-      });
-
-      // Time period sectioning (background bands)
-      const timeLabels = [
-        { label: "Night", range: [0, 5], color: "#e0f7fa" },
-        { label: "Morning", range: [6, 11], color: "#e8f5e9" },
-        { label: "Noon", range: [12, 13], color: "#fffde7" },
-        { label: "Afternoon", range: [14, 17], color: "#fff3e0" },
-        { label: "Evening", range: [18, 23], color: "#ede7f6" },
-      ];
-      const labelY = 7 * cellSize + 12;
-
-      timeLabels.forEach(({ label, range, color: bgColor }) => {
-        const startX = range[0] * cellSize;
-        const widthX = (range[1] - range[0] + 1) * cellSize;
-
-        g.append("rect")
-          .attr("x", startX)
-          .attr("y", -margin.top)
-          .attr("width", widthX)
-          .attr("height", cellSize * 7)
-          .style("fill", bgColor)
-          .style("opacity", 0.3);
-
-        g.append("text")
-          .attr("x", startX + widthX / 2)
-          .attr("y", labelY)
-          .attr("text-anchor", "middle")
-          .style("font-size", "8px")
-          .style("fill", "#333")
-          .text(label);
-      });
-
-      const tooltip = d3.select("body").select(".tooltip");
-      if (tooltip.empty()) {
-        d3.select("body")
-          .append("div")
-          .attr("class", "tooltip")
-          .style("position", "absolute")
-          .style("background", "#333")
-          .style("color", "#fff")
-          .style("padding", "4px 8px")
-          .style("border-radius", "4px")
-          .style("font-size", "10px")
-          .style("pointer-events", "none")
-          .style("opacity", 0);
-      }
-
-      const workingTooltip = d3.select("body").select(".tooltip");
-
-      for (let d = 0; d < 7; d++) {
-        for (let h = 0; h < 24; h++) {
-          g.append("rect")
-            .attr("x", h * cellSize)
-            .attr("y", d * cellSize)
-            .attr("width", cellSize)
-            .attr("height", cellSize)
-            .attr("fill", color(matrix[d][h]))
-            .on("mouseover", function (event) {
-              workingTooltip
-                .style("opacity", 1)
-                .html(
-                  `${dayLabels[d]}, ${h}:00<br><p>${matrix[d][h].toFixed(
-                    1
-                  )} minutes</p>`
-                )
-                .style("left", `${event.pageX + 10}px`)
-                .style("top", `${event.pageY - 28}px`)
-                .style("color", "var(--white-color)");
-            })
-            .on("mouseout", () => workingTooltip.style("opacity", 0));
-        }
-      }
-
-      timeLabels.forEach(({ range }) => {
-        const xPos = (range[0]) * cellSize;
-        g.append("line")
-          .attr("x1", xPos)
-          .attr("x2", xPos)
-          .attr("y1", 0)
-          .attr("y2", cellSize * 7)
-          .attr("stroke", "#000")
-          .attr("stroke-dasharray", "2,2")
-          .attr("stroke-width", 1);
-      });
-
-      // Legend (color gradient)
-      const legendHeight = 8;
-      const legendWidth = 150;
-      const legendGroup = svg
-        .append("g")
-        .attr("transform", `translate(${margin.left},${svgHeight - 20})`);
-
-      const gradientId = "legendGradient";
-      const defs = svg.append("defs");
-      const gradient = defs
-        .append("linearGradient")
-        .attr("id", gradientId)
-        .attr("x1", "0%")
-        .attr("x2", "100%")
-        .attr("y1", "0%")
-        .attr("y2", "0%");
-      for (let i = 0; i <= 100; i++) {
-        gradient
-          .append("stop")
-          .attr("offset", `${i}%`)
-          .attr("stop-color", color((maxVal * i) / 100));
-      }
-
-      legendGroup
-        .append("rect")
-        .attr("width", legendWidth)
-        .attr("height", legendHeight)
-        .style("fill", `url(#${gradientId})`);
-
-      const legendScale = d3
-        .scaleLinear()
-        .domain([0, maxVal])
-        .range([0, legendWidth]);
-
-      const legendAxis = d3
-        .axisBottom(legendScale)
-        .ticks(4)
-        .tickSize(3)
-        .tickFormat((d) => `${d.toFixed(0)} min`);
-
-      legendGroup
-        .append("g")
-        .attr("transform", `translate(0, ${legendHeight})`)
-        .call(legendAxis)
-        .selectAll("text")
-        .style("font-size", "8px");
-    };
-
-    drawLine(); // Initial load
-
-    // Add logic to both radio buttons
-    container.selectAll("input[name='viewMode']").on("change", function () {
-      const mode = this.value;
-      if (mode === "heatmap") drawHeatmap();
-      else drawLine();
-    });
-  }
-
+  // If a Spotify track URI exists, fetch the image via the oEmbed API.
   if (trackData.spotify_track_uri) {
     const trackId = trackData.spotify_track_uri.split(":")[2];
     const oEmbedUrl = `https://open.spotify.com/oembed?url=https://open.spotify.com/track/${trackId}`;
@@ -1718,18 +1322,15 @@ function hashStringToIndex(str, range) {
 }
 
 function updateSunburstChart(data, artistName) {
-  // Filter artist data that includes album names.
   const artistData = data.filter(
     (d) =>
       d.master_metadata_album_artist_name &&
-      d.master_metadata_album_artist_name.toLowerCase() ===
-        artistName.toLowerCase() &&
+      d.master_metadata_album_artist_name.toLowerCase() === artistName.toLowerCase() &&
       d.master_metadata_album_album_name
   );
 
   const chartContainer = d3.select("#sunburstChart");
 
-  // Create (or reuse) the flex container.
   let flexContainer = chartContainer.select("div.sunburstFlex");
   if (flexContainer.empty()) {
     flexContainer = chartContainer
@@ -1737,215 +1338,116 @@ function updateSunburstChart(data, artistName) {
       .attr("class", "sunburstFlex")
       .style("display", "flex")
       .style("flex-direction", "row")
-      .style("justify-content", "space-around")
       .style("gap", "20px");
-    // Append the fixed sunburst SVG container.
-    flexContainer.append("div").attr("class", "sunburstSVG");
-    // Append the album info container and hide it initially.
-    flexContainer
-      .append("div")
-      .attr("class", "albumInfo")
-      .style("border-radius", "var(--border-radius-small)")
-      .style("padding", "var(--spacing)")
-      .style("display", "none"); // Hide initially
   } else {
-    // Always clear the sunburstSVG but not the albumInfo container.
-    flexContainer.select("div.sunburstSVG").html("");
+    flexContainer.html("");
   }
 
-  // Select the two containers.
-  const svgContainer = flexContainer
-    .select("div.sunburstSVG")
-    .style("display", "flex")
-    .style("height", "350px")
-    .style("align-items", "center");
+  const infoBox = flexContainer
+    .append("div")
+    .attr("class", "albumInfo")
+    .style("width", "500px")
+    .style("padding", "1em")
+    .style("overflow-y", "auto")
+    .style("max-height", "400px")
+    .style("border", "1px solid var(--dark-green-color)")
+    .style("border-radius", "8px")
+    .style("box-shadow", "0 0 6px rgba(0,0,0,0.1)")
+    .style("background", "var(--white-color)");
 
-  // Group the artist data by album.
+  const detailBox = flexContainer
+    .append("div")
+    .attr("class", "albumDetailInfo")
+    .style("width", "500px")
+    .style("padding", "1em")
+    .style("overflow-y", "auto")
+    .style("max-height", "400px")
+    .style("border", "1px solid var(--dark-green-color)")
+    .style("border-radius", "8px")
+    .style("box-shadow", "0 0 6px rgba(0,0,0,0.1)")
+    .style("background", "var(--white-color)")
+    .style("display", "none");
+
   const albums = d3.groups(
     artistData,
     (d) => d.master_metadata_album_album_name
   );
-  const hierarchy = {
-    name: artistName,
-    children: albums.map(([album, records]) => {
-      const tracks = d3.groups(records, (d) => d.master_metadata_track_name);
-      return {
-        name: album,
-        children: tracks.map(([track, trackRecords]) => ({
-          name: track,
-          value: d3.sum(trackRecords, (d) => +d.ms_played / 60000),
-        })),
-      };
-    }),
-  };
 
-  const width = 300,
-    radius = width / 2;
-  const partition = d3.partition().size([2 * Math.PI, radius]);
-  const root = d3.hierarchy(hierarchy).sum((d) => d.value);
-  partition(root);
+  const albumStats = albums.map(([album, records]) => {
+    const tracks = d3.groups(records, (d) => d.master_metadata_track_name);
+    const totalMinutes = d3.sum(records, (d) => +d.ms_played / 60000);
+    const songCounts = tracks.map(([_, tr]) => d3.sum(tr, (d) => +d.ms_played / 60000));
+    const oneSongDominance = Math.max(...songCounts) / totalMinutes;
+    return {
+      name: album,
+      totalMinutes,
+      songCount: tracks.length,
+      oneSongDominance,
+    };
+  });
 
-  // Build the sunburst SVG.
-  const svg = svgContainer
-    .append("svg")
-    .attr("width", width)
-    .attr("height", width)
-    .append("g")
-    .attr("transform", `translate(${radius},${radius})`);
+  const multiTrackAlbums = albumStats.filter(d => d.songCount > 1);
+  const topPlayedAlbum = d3.max(albumStats, d => d.totalMinutes);
+  const topPlayed = albumStats.find(d => d.totalMinutes === topPlayedAlbum);
 
-  const arc = d3
-    .arc()
-    .startAngle((d) => d.x0)
-    .endAngle((d) => d.x1)
-    .innerRadius((d) => d.y0)
-    .outerRadius((d) => d.y1);
+  const topTracksAlbum = d3.max(albumStats, d => d.songCount);
+  const mostTracks = albumStats.find(d => d.songCount === topTracksAlbum);
 
-  const paths = svg
-    .selectAll("path")
-    .data(root.descendants().filter((d) => d.depth))
-    .enter()
-    .append("path")
-    .attr("d", arc)
-    .attr("fill", (d) => {
-      let current = d;
-      while (current.depth > 1) current = current.parent;
-      const albumName = current.data.name;
-      if (!albumColorMap.has(albumName)) {
-        const index = hashStringToIndex(albumName, colorScale.range().length);
-        albumColorMap.set(albumName, colorScale(index));
-      }
-      return albumColorMap.get(albumName);
-    })
-    .attr("stroke", "#fff")
-    .attr("cursor", "pointer")
-    .on("mouseover", function (event, d) {
-      const percentage = ((d.value / root.value) * 100).toFixed(2);
-      d3.select(this).transition().duration(200).attr("opacity", 0.7);
-      d3.select("#sunburstTooltip")
-        .interrupt()
-        .style("opacity", 1)
-        .html(
-          `<strong>${d.data.name}</strong><br/>${d.value.toFixed(
-            1
-          )} minutes<br/>(${percentage}%)`
-        )
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY + 10 + "px");
-    })
-    .on("mousemove", (event) => {
-      d3.select("#sunburstTooltip")
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY + 10 + "px");
-    })
-    .on("mouseout", function () {
-      d3.select(this).transition().duration(200).attr("opacity", 1);
-      d3.select("#sunburstTooltip")
-        .transition()
-        .duration(200)
-        .style("opacity", 0);
-    })
-    .on("click", function (event, d) {
-      if (d.depth === 1) {
-        drillDownState.selectedAlbum = d.data.name;
-        // Update arc styling for selection.
-        paths
-          .transition()
-          .duration(200)
-          .attr("fill", function (p) {
-            if (
-              p
-                .ancestors()
-                .find(
-                  (a) =>
-                    a.depth === 1 &&
-                    a.data.name === drillDownState.selectedAlbum
-                )
-            ) {
-              let albumNode = p.ancestors().find((a) => a.depth === 1);
-              return albumColorMap.get(albumNode.data.name);
-            }
-            return "#f5f5f5";
-          })
-          .attr("stroke", (p) =>
-            p.depth === 1 && p.data.name === drillDownState.selectedAlbum
-              ? "#000"
-              : "#fff"
-          )
-          .attr("stroke-width", (p) =>
-            p.depth === 1 && p.data.name === drillDownState.selectedAlbum
-              ? 4
-              : 1
-          );
+  const topDominanceAlbum = d3.max(multiTrackAlbums, d => d.oneSongDominance);
+  const dominant = multiTrackAlbums.find(d => d.oneSongDominance === topDominanceAlbum);
 
-        // Update the album info but keep the container visible.
-        updateAlbumInfo(d.data.name, artistData);
+  const topAlbums = albumStats
+    .slice()
+    .sort((a, b) => d3.descending(a.totalMinutes, b.totalMinutes))
+    .slice(0, 5);
+
+  const topAlbumsHTML = topAlbums.map(
+    (a, i) => `<p style="margin:0">#${i + 1} <span class="clickable" style="font-weight:bold; color:var(--dark-green-color); cursor:pointer;">${a.name}</span> (${a.totalMinutes.toFixed(1)} min, ${a.songCount} song${a.songCount > 1 ? 's' : ''})</p>`
+  ).join("");
+
+  infoBox
+    .append("div")
+    .html(`
+      <p style="margin:0"> Most <strong>played album</strong>: <span class="clickable" style="color:var(--dark-green-color); font-weight:bold; cursor:pointer;">${topPlayed.name}</span> (${topPlayed.totalMinutes.toFixed(1)} minutes)</p>
+      <p style="margin:0"> Album with <strong>most songs played</strong>: <span class="clickable" style="color:var(--dark-green-color); font-weight:bold; cursor:pointer;">${mostTracks.name}</span> (${mostTracks.songCount} songs)</p>
+      <p style="margin:0"> <strong>Most focused listening</strong>: <span class="clickable" style="color:var(--dark-green-color); font-weight:bold; cursor:pointer;">${dominant.name}</span> (${(dominant.oneSongDominance * 100).toFixed(1)}%)</p>
+      <br>
+      <p style="margin:0; font-weight:bold"> Top Albums</p>
+      ${topAlbumsHTML}
+    `)
+    .on("click", (event) => {
+      const clicked = event.target.innerText;
+      const names = albumStats.map(d => d.name);
+      if (names.includes(clicked)) {
+        drillDownState.selectedAlbum = clicked;
+        detailBox.style("display", "block");
+        updateAlbumInfo(clicked, artistData, detailBox);
       }
     });
 
-  d3.select("#sunburstTooltip")
-    .on("mouseenter", () =>
-      d3.select("#sunburstTooltip").interrupt().style("opacity", 1)
-    )
-    .on("mouseleave", () =>
-      d3
-        .select("#sunburstTooltip")
-        .transition()
-        .duration(200)
-        .style("opacity", 0)
-    );
-
   if (drillDownState.selectedAlbum) {
-    paths
-      .transition()
-      .duration(200)
-      .attr("fill", function (p) {
-        if (
-          p
-            .ancestors()
-            .find(
-              (a) =>
-                a.depth === 1 && a.data.name === drillDownState.selectedAlbum
-            )
-        ) {
-          let albumNode = p.ancestors().find((a) => a.depth === 1);
-          return albumColorMap.get(albumNode.data.name);
-        }
-        return "#f5f5f5";
-      })
-      .attr("stroke", (p) =>
-        p.depth === 1 && p.data.name === drillDownState.selectedAlbum
-          ? "#000"
-          : "#fff"
-      )
-      .attr("stroke-width", (p) =>
-        p.depth === 1 && p.data.name === drillDownState.selectedAlbum ? 4 : 1
-      );
-    updateAlbumInfo(drillDownState.selectedAlbum, artistData);
+    detailBox.style("display", "block");
+    updateAlbumInfo(drillDownState.selectedAlbum, artistData, detailBox);
   }
 }
 
-function updateAlbumInfo(selectedAlbum, artistData) {
-  const infoContainer = d3
-    .select("#sunburstChart")
-    .select("div.sunburstFlex")
-    .select("div.albumInfo")
-    .style("display", "flex")
-    .style("justify-content", "space-around")
-    .style("flex-direction", "column")
-    .style("width", "40%")
-    .style("text-align", "center")
-    .style("color", "rgb(85,85,85")
-    .style("font-style", "italic");
 
+
+function updateAlbumInfo(selectedAlbum, artistData, detailBox) {
+  const infoContainer = detailBox;
+
+  // Make sure the detail container is visible.
+  infoContainer.style("display", "block");
+
+  // Show a loading state.
   infoContainer.html(
     "<p style='text-align:center; color:#555; font-style:italic;'>Loading album details…</p>"
   );
 
   const filtered = artistData.filter(
     (d) =>
-      d.master_metadata_album_album_name &&
       d.master_metadata_album_album_name.toLowerCase() ===
-        selectedAlbum.toLowerCase()
+      selectedAlbum.toLowerCase()
   );
 
   if (filtered.length === 0) {
@@ -1960,124 +1462,75 @@ function updateAlbumInfo(selectedAlbum, artistData) {
   const dates = filtered.map((d) => new Date(d.ts));
   const minDate = new Date(Math.min(...dates));
 
-  const listensByYear = d3
-    .rollups(
-      filtered,
-      (v) => d3.sum(v, (d) => +d.ms_played / 60000),
-      (d) => new Date(d.ts).getFullYear()
-    )
-    .sort((a, b) => b[1] - a[1]);
-
+  const listensByYear = d3.rollups(
+    filtered,
+    (v) => d3.sum(v, (d) => +d.ms_played / 60000),
+    (d) => new Date(d.ts).getFullYear()
+  );
+  listensByYear.sort((a, b) => b[1] - a[1]);
   const peakYear = listensByYear.length ? listensByYear[0][0] : "N/A";
   const peakYearMinutes = listensByYear.length ? listensByYear[0][1] : 0;
 
-  // Try to fetch image from the first track in the album
-  const firstTrackWithURI = filtered.find(
-    (d) => d.spotify_track_uri && d.spotify_track_uri.includes("spotify:track:")
-  );
-  let albumImageUrl = "";
+  infoContainer.html("");
 
-  const renderAlbumDetails = () => {
-    infoContainer.html("");
+  const headerContainer = infoContainer
+    .append("div")
+    .attr("class", "albumHeader")
+    .style("display", "flex")
+    .style("justify-content", "space-between");
 
-    const infoContent = infoContainer
-      .append("div")
-      .attr("class", "infoContent")
-      .style("display", "flex")
-      .style("flex-direction", "row")
-      .style("align-items", "start")
-      .style("justify-content", "space-between")
-      .style("width", "100%");
+  headerContainer.append("h3").text(selectedAlbum);
 
-    const headerContent = infoContent
-      .append("div")
-      .attr("class", "headerContent")
-      .style("flex", "1")
-      .style("display", "flex")
-      .style("flex-direction", "row");
+  headerContainer
+    .append("button")
+    .attr("class", "button")
+    .text("X")
+    .style("cursor", "pointer")
+    .on("click", () => {
+      drillDownState.selectedAlbum = null;
+      infoContainer.html("");
+      infoContainer.style("display", "none");
 
-    if (albumImageUrl) {
-      headerContent
-        .append("img")
-        .attr("src", albumImageUrl)
-        .attr("alt", "Album Artwork")
-        .style("width", "20%")
-        .style("margin-right", "var(--spacing)")
-        .style("border-radius", "var(--border-radius)")
-        .style("height", "auto");
-    }
+      d3.select("#sunburstChart")
+        .select("div.sunburstSVG")
+        .select("svg")
+        .selectAll("path")
+        .transition()
+        .duration(200)
+        .attr("fill", (d) => {
+          let current = d;
+          while (current.depth > 1) current = current.parent;
+          const albumName = current.data.name;
+          if (!albumColorMap.has(albumName)) {
+            const index = hashStringToIndex(
+              albumName,
+              colorScale.range().length
+            );
+            albumColorMap.set(albumName, colorScale(index));
+          }
+          return albumColorMap.get(albumName);
+        })
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1);
+    });
 
-    headerContent
-      .append("h3")
-      .style("margin-left", albumImageUrl ? "var(--spacing)" : "0")
-      .text(selectedAlbum);
+  const detailsContainer = infoContainer
+    .append("div")
+    .attr("class", "albumDetails");
 
-    infoContent
-      .append("button")
-      .attr("class", "button")
-      .text("X")
-      .style("cursor", "pointer")
-      .on("click", () => {
-        drillDownState.selectedAlbum = null;
-        infoContainer.html("").style("display", "none");
-
-        d3.select("#sunburstChart")
-          .select("div.sunburstSVG")
-          .select("svg")
-          .selectAll("path")
-          .transition()
-          .duration(200)
-          .attr("fill", (d) => {
-            let current = d;
-            while (current.depth > 1) current = current.parent;
-            const albumName = current.data.name;
-            if (!albumColorMap.has(albumName)) {
-              const index = hashStringToIndex(
-                albumName,
-                colorScale.range().length
-              );
-              albumColorMap.set(albumName, colorScale(index));
-            }
-            return albumColorMap.get(albumName);
-          })
-          .attr("stroke", "#fff")
-          .attr("stroke-width", 1);
-      });
-
-    const card = infoContainer
-      .append("div")
-      .style("padding", "var(--spacing)")
-      .style("background", "rgba(76, 175, 79, 0.1)")
-      .style("border-radius", "var(--border-radius-small)")
-      .style("border", "1px solid rgb(221, 221, 221)")
-      .style("font-size", "var(--font-small-size)");
-
-    card.html(`
-      <p>You first listened to <strong>${selectedAlbum}</strong> on <strong>${minDate.toLocaleDateString()}</strong>.</p>
-      <p>Total plays: <strong>${totalAlbumPlays}</strong></p>
-      <p>Total listening time: <strong>${totalAlbumMinutes.toFixed(
+  const detailsHTML = `
+      <p style="margin:2px 0;"><strong>Album Details:</strong></p>
+      <p style="margin:2px 0;">You first listened to <em>${selectedAlbum}</em> on <strong>${minDate.toLocaleDateString()}</strong> and have played it <strong>${totalAlbumPlays} times</strong>.</p>
+      <p style="margin:2px 0;">Total listening time: <strong>${totalAlbumMinutes.toFixed(
         1
-      )}</strong> minutes.</p>
-      <p>Peak year: <strong>${peakYear}</strong> with <strong>${peakYearMinutes.toFixed(
-      1
-    )}</strong> minutes.</p>
-    `);
-  };
+      )}</strong> minutes. Your peak year was <strong>${peakYear}</strong> with <strong>${peakYearMinutes.toFixed(
+    1
+  )}</strong> minutes.</p>
+  `;
 
-  if (firstTrackWithURI) {
-    const trackId = firstTrackWithURI.spotify_track_uri.split(":")[2];
-    const oEmbedUrl = `https://open.spotify.com/oembed?url=https://open.spotify.com/track/${trackId}`;
-    fetch(oEmbedUrl)
-      .then((res) => res.json())
-      .then((embedData) => {
-        albumImageUrl = embedData.thumbnail_url || "";
-        renderAlbumDetails();
-      })
-      .catch(() => renderAlbumDetails());
-  } else {
-    renderAlbumDetails();
-  }
+  detailsContainer.html(detailsHTML);
 }
+
 
 /***********************
  * Mood & Behavior Sankey with Hover Highlighting
@@ -2439,15 +1892,6 @@ document.getElementById("toggleSong").addEventListener("change", function () {
 // Toggle the Album Distribution (Sunburst Chart) container
 document.getElementById("toggleAlbum").addEventListener("change", function () {
   const sunburstChart = document.getElementById("sunburstChart");
-  if (this.checked) {
-    sunburstChart.style.display = "block";
-  } else {
-    sunburstChart.style.display = "none";
-  }
-});
-
-document.getElementById("toggleSankey").addEventListener("change", function () {
-  const sunburstChart = document.getElementById("moodSankey");
   if (this.checked) {
     sunburstChart.style.display = "block";
   } else {
