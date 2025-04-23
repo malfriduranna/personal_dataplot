@@ -1362,11 +1362,13 @@ function updateSunburstChart(data, artistName) {
     .style("padding", "1em")
     .style("overflow-y", "auto")
     .style("max-height", "400px")
-    .style("border", "1px solid var(--dark-green-color)")
+    .style("text-align", "center")
+    .style("font-style", "italic")
+    .style("color", "#555")
     .style("border-radius", "8px")
-    .style("box-shadow", "0 0 6px rgba(0,0,0,0.1)")
-    .style("background", "var(--white-color)")
-    .style("display", "none");
+    .style("display", "flex")
+    .style("flex-direction", "column")
+    .style("align-items", "center")
 
   const albums = d3.groups(
     artistData,
@@ -1402,17 +1404,17 @@ function updateSunburstChart(data, artistName) {
     .slice(0, 5);
 
   const topAlbumsHTML = topAlbums.map(
-    (a, i) => `<p style="margin:0">#${i + 1} <span class="clickable" style="font-weight:bold; color:var(--dark-green-color); cursor:pointer;">${a.name}</span> (${a.totalMinutes.toFixed(1)} min, ${a.songCount} song${a.songCount > 1 ? 's' : ''})</p>`
+    (a, i) => `<p style="margin:0">${i + 1}. <span class="clickable" style="font-weight:bold; color:var(--black-color); cursor:pointer;">${a.name}</span> (${a.totalMinutes.toFixed(1)} min, ${a.songCount} song${a.songCount > 1 ? 's' : ''})</p>`
   ).join("");
 
   infoBox
     .append("div")
     .html(`
-      <p style="margin:0"> Most <strong>played album</strong>: <span class="clickable" style="color:var(--dark-green-color); font-weight:bold; cursor:pointer;">${topPlayed.name}</span> (${topPlayed.totalMinutes.toFixed(1)} minutes)</p>
-      <p style="margin:0"> Album with <strong>most songs played</strong>: <span class="clickable" style="color:var(--dark-green-color); font-weight:bold; cursor:pointer;">${mostTracks.name}</span> (${mostTracks.songCount} songs)</p>
-      <p style="margin:0"> <strong>Most focused listening</strong>: <span class="clickable" style="color:var(--dark-green-color); font-weight:bold; cursor:pointer;">${dominant.name}</span> (${(dominant.oneSongDominance * 100).toFixed(1)}%)</p>
+      <p > Most <strong>played album</strong>: <span class="clickable" style="color:var(--dark-green-color); font-weight:bold; cursor:pointer;">${topPlayed.name}</span> (${topPlayed.totalMinutes.toFixed(1)} minutes)</p>
+      <p > Album with <strong>most songs played</strong>: <span class="clickable" style="color:var(--dark-green-color); font-weight:bold; cursor:pointer;">${mostTracks.name}</span> (${mostTracks.songCount} songs)</p>
+      <p> <strong>Most focused listening</strong>: <span class="clickable" style="color:var(--dark-green-color); font-weight:bold; cursor:pointer;">${dominant.name}</span> (${(dominant.oneSongDominance * 100).toFixed(1)}%)</p>
       <br>
-      <p style="margin:0; font-weight:bold"> Top Albums</p>
+      <p style="font-weight:bold"> Top Albums</p>
       ${topAlbumsHTML}
     `)
     .on("click", (event) => {
@@ -1420,13 +1422,11 @@ function updateSunburstChart(data, artistName) {
       const names = albumStats.map(d => d.name);
       if (names.includes(clicked)) {
         drillDownState.selectedAlbum = clicked;
-        detailBox.style("display", "block");
         updateAlbumInfo(clicked, artistData, detailBox);
       }
     });
 
   if (drillDownState.selectedAlbum) {
-    detailBox.style("display", "block");
     updateAlbumInfo(drillDownState.selectedAlbum, artistData, detailBox);
   }
 }
@@ -1435,25 +1435,14 @@ function updateSunburstChart(data, artistName) {
 
 function updateAlbumInfo(selectedAlbum, artistData, detailBox) {
   const infoContainer = detailBox;
-
-  // Make sure the detail container is visible.
-  infoContainer.style("display", "block");
-
-  // Show a loading state.
-  infoContainer.html(
-    "<p style='text-align:center; color:#555; font-style:italic;'>Loading album details…</p>"
-  );
+  infoContainer.html("<p style='text-align:center; color:#555; font-style:italic;'>Loading album details…</p>");
 
   const filtered = artistData.filter(
-    (d) =>
-      d.master_metadata_album_album_name.toLowerCase() ===
-      selectedAlbum.toLowerCase()
+    (d) => d.master_metadata_album_album_name.toLowerCase() === selectedAlbum.toLowerCase()
   );
 
   if (filtered.length === 0) {
-    infoContainer.html(
-      "<p class='empty-message'>No details available for the selected album.</p>"
-    );
+    infoContainer.html("<p class='empty-message'>No details available for the selected album.</p>");
     return;
   }
 
@@ -1471,65 +1460,110 @@ function updateAlbumInfo(selectedAlbum, artistData, detailBox) {
   const peakYear = listensByYear.length ? listensByYear[0][0] : "N/A";
   const peakYearMinutes = listensByYear.length ? listensByYear[0][1] : 0;
 
-  infoContainer.html("");
+  const firstTrackWithUri = filtered.find((d) => d.spotify_track_uri);
+  let albumImageUrl = "";
 
-  const headerContainer = infoContainer
-    .append("div")
-    .attr("class", "albumHeader")
-    .style("display", "flex")
-    .style("justify-content", "space-between");
+  function renderAlbumDetails() {
+    infoContainer.html("");
 
-  headerContainer.append("h3").text(selectedAlbum);
+    const infoContent = infoContainer
+      .append("div")
+      .attr("class", "infoContent")
+      .style("display", "flex")
+      .style("flex-direction", "row")
+      .style("align-items", "start")
+      .style("justify-content", "space-between")
+      .style("width", "100%");
 
-  headerContainer
-    .append("button")
-    .attr("class", "button")
-    .text("X")
-    .style("cursor", "pointer")
-    .on("click", () => {
-      drillDownState.selectedAlbum = null;
-      infoContainer.html("");
-      infoContainer.style("display", "none");
+    const headerContent = infoContent
+      .append("div")
+      .attr("class", "headerContent")
+      .style("flex", "1")
+      .style("display", "flex")
+      .style("flex-direction", "row");
 
-      d3.select("#sunburstChart")
-        .select("div.sunburstSVG")
-        .select("svg")
-        .selectAll("path")
-        .transition()
-        .duration(200)
-        .attr("fill", (d) => {
-          let current = d;
-          while (current.depth > 1) current = current.parent;
-          const albumName = current.data.name;
-          if (!albumColorMap.has(albumName)) {
-            const index = hashStringToIndex(
-              albumName,
-              colorScale.range().length
-            );
-            albumColorMap.set(albumName, colorScale(index));
-          }
-          return albumColorMap.get(albumName);
-        })
-        .attr("stroke", "#fff")
-        .attr("stroke-width", 1);
-    });
+    if (albumImageUrl) {
+      headerContent
+        .insert("img", ":first-child")
+        .attr("src", albumImageUrl)
+        .attr("alt", "Spotify Album Image")
+        .style("width", "20%")
+        .style("display", "block")
+        .style("border-radius", "var(--border-radius)")
+        .style("height", "auto");
+    }
 
-  const detailsContainer = infoContainer
-    .append("div")
-    .attr("class", "albumDetails");
+    headerContent
+      .append("h3")
+      .style("margin-left", "var(--spacing)")
+      .text(selectedAlbum);
 
-  const detailsHTML = `
-      <p style="margin:2px 0;"><strong>Album Details:</strong></p>
-      <p style="margin:2px 0;">You first listened to <em>${selectedAlbum}</em> on <strong>${minDate.toLocaleDateString()}</strong> and have played it <strong>${totalAlbumPlays} times</strong>.</p>
-      <p style="margin:2px 0;">Total listening time: <strong>${totalAlbumMinutes.toFixed(
-        1
-      )}</strong> minutes. Your peak year was <strong>${peakYear}</strong> with <strong>${peakYearMinutes.toFixed(
-    1
-  )}</strong> minutes.</p>
-  `;
+    infoContent
+      .append("button")
+      .attr("class", "button")
+      .text("X")
+      .style("cursor", "pointer")
+      .on("click", () => {
+        drillDownState.selectedAlbum = null;
+        infoContainer.html("");
+        infoContainer.style("display", "none");
 
-  detailsContainer.html(detailsHTML);
+        d3.select("#sunburstChart")
+          .select("div.sunburstSVG")
+          .select("svg")
+          .selectAll("path")
+          .transition()
+          .duration(200)
+          .attr("fill", (d) => {
+            let current = d;
+            while (current.depth > 1) current = current.parent;
+            const albumName = current.data.name;
+            if (!albumColorMap.has(albumName)) {
+              const index = hashStringToIndex(albumName, colorScale.range().length);
+              albumColorMap.set(albumName, colorScale(index));
+            }
+            return albumColorMap.get(albumName);
+          })
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 1);
+      });
+
+    const albumInfoDiv = infoContainer
+      .append("div")
+      .attr("class", "albumInfoDiv")
+      .style("display", "flex")
+      .style("margin", "auto");
+
+    albumInfoDiv
+      .append("div")
+      .style("padding", "var(--spacing)")
+      .style("background", "rgba(76, 175, 79, 0.1)")
+      .style("border-radius", "var(--border-radius-small)")
+      .style("border", "1px solid rgb(221, 221, 221)")
+      .style("width", "100%")
+      .style("font-size", "var(--font-small-size)")
+      .html(
+        `<p>You first listened to this album on <strong>${minDate.toLocaleDateString()}</strong>.</p>` +
+        `<p>Total listening time: <strong>${totalAlbumMinutes.toFixed(1)} minutes</strong> across <strong>${totalAlbumPlays}</strong> plays.</p>` +
+        `<p>Your peak year was <strong>${peakYear}</strong> with <strong>${peakYearMinutes.toFixed(1)} minutes</strong>.</p>`
+      );
+  }
+
+  if (firstTrackWithUri) {
+    const trackId = firstTrackWithUri.spotify_track_uri.split(":")[2];
+    const oEmbedUrl = `https://open.spotify.com/oembed?url=https://open.spotify.com/track/${trackId}`;
+    fetch(oEmbedUrl)
+      .then((res) => res.json())
+      .then((embedData) => {
+        albumImageUrl = embedData.thumbnail_url || "";
+        renderAlbumDetails();
+      })
+      .catch(() => renderAlbumDetails());
+  } else {
+    renderAlbumDetails();
+  }
 }
+
 
 
 /***********************

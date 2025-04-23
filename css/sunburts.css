@@ -4,6 +4,23 @@
   flex-direction: row;
 }
 
+.albumDetailBox,
+.infoContent,
+.headerContent,
+.albumChartDiv {
+  overflow: visible !important;
+}
+
+.albumDetailBox {
+  position: relative;
+  z-index: 1;
+}
+
+.albumChartDiv svg {
+  overflow: visible;
+  z-index: 2;
+}
+
 .insight_box {
   display: flex;
   flex-direction: column;
