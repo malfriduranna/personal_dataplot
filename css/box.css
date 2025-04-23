@@ -52,6 +52,29 @@
   margin: 0;
 }
 
+.info-left, .info-right {
+  flex: 1;
+}
+
+.top-years-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.top-years-list li {
+  margin: 0;
+}
+
+strong {
+  color: #333;
+}
+
+p, li {
+  font-size: 1rem;
+  margin: 4px 0;
+}
+
 .placeholder {
   text-align: start;
   font-style: italic;
