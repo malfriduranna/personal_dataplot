@@ -70,7 +70,7 @@ let currentCalendarHeight = 0;
 // --- Data Processing (Runs once) ---
 (async function loadData() {
     try {
-        const rawData = await d3.csv("data/astrid_data.csv");
+        const rawData = await d3.csv("data/spotify_listening_history.csv");
 
         // Detect available columns
         const columns = new Set(rawData.columns);
@@ -850,7 +850,7 @@ function drawForceGraphAsText(filteredData, containerId, topN = 10) {
     textContent += `<p>Most Frequent Transitions (${transitions.size} unique):</p><ol>`;
     const maxTransitionsToShow = 10;
     sortedTransitions.slice(0, maxTransitionsToShow).forEach(([key, count]) => { const [source, target] = key.split(":::"); textContent += `<li>${source} → ${target} (${count} times)</li>`; });
-    if (sortedTransitions.length > maxTransitionsToShow) textContent += `<li>... (${sortedTransitions.length - maxTransitionsToShow} more)</li>`;
+    // if (sortedTransitions.length > maxTransitionsToShow) textContent += `<li>... (${sortedTransitions.length - maxTransitionsToShow} more)</li>`;
     textContent += `</ol>`; container.innerHTML = textContent;
     const descEl = container.nextElementSibling; if (descEl && descEl.classList.contains('chart-description')) descEl.innerHTML = `Summary of transitions between top ${topArtistsMap.size} artists.`;
 }
