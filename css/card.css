@@ -130,5 +130,11 @@
   border-radius: var(--border-radius-small);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   flex: 1;
-  min-width: 250px;
+}
+
+#top-tracks-container {
+  padding: 1rem 1.5rem;
+  border-radius: var(--border-radius-small);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  flex: 1;
 }
