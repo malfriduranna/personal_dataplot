@@ -57,12 +57,11 @@
 }
 
 .calendar-wrapper {
-    flex: 2; /* Calendar takes more space */
-    min-width: 350px; /* Prevent it getting too small */
+    flex: 1; /* Calendar takes more space */
 }
 #calendar {
     overflow-x: auto; /* Allow horizontal scroll if needed */
-    padding-bottom: 10px; /* Space for scrollbar */
+    padding-bottom: var(--spacing); /* Space for scrollbar */
 }
 .filter-info {
     margin-top: 1rem;
@@ -74,7 +73,7 @@
 .top-lists-wrapper {
     flex: 1; /* Lists take less space */
     display: flex;
-    flex-direction: column; /* Stack lists vertically by default */
+    flex-wrap: wrap;/* Stack lists vertically by default */
     gap: var(--section-spacing); /* Space between the two list cards */
     min-width: 300px;
 }
@@ -86,8 +85,7 @@
     gap: var(--section-spacing);
 }
 .charts-row-section .chart-container {
-    flex: 1; /* Each chart takes equal space */
-    min-width: 300px; /* Minimum width before wrapping */
+    flex: 1; /* Each chart takes equal space */ /* Minimum width before wrapping */
 }
 
 /* Full Width Sections */

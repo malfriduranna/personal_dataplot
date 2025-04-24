@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="css/footer.css" />
     <link rel="stylesheet" href="css/messages.css" />
     <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/card.css" />
     <link rel="stylesheet" href="css/button.css" />
     <link rel="stylesheet" href="css/tooltip.css" />
     <link rel="stylesheet" href="css/top-lists.css" />
@@ -65,14 +66,6 @@
 
       <!-- Section for Calendar + Top Lists -->
       <section class="dashboard-section calendar-top-section">
-        <div class="calendar-wrapper card">
-          <h2>Daily Listening Heatmap</h2>
-          <div id="calendar"></div>
-          <div id="legend"></div>
-          <div class="filter-info">
-            Current Selection: <span id="current-filter-info">Loading...</span>
-          </div>
-        </div>
         <div class="top-lists-wrapper">
           <!-- Top Artists Card - Container changed to DIV -->
           <div class="top-list-container card" id="top-artists-container">
@@ -91,6 +84,14 @@
 
       <!-- Section for Row Charts (Time/Day) -->
       <section class="dashboard-section charts-row-section">
+        <div class="calendar-wrapper card">
+          <h2>Daily Listening Heatmap</h2>
+          <div id="calendar"></div>
+          <div id="legend"></div>
+          <div class="filter-info">
+            Current Selection: <span id="current-filter-info">Loading...</span>
+          </div>
+        </div>
         <div class="chart-container card" id="time-of-day-container">
           <h2>Time of Day</h2>
           <div id="time-of-day-chart"></div>
@@ -152,6 +153,6 @@
     </footer>
 
     <!-- Load the script as a module -->
-    <script src="scripts/spotifyDashboard.js" type="module" defer></script>
+    <script src="scripts/spotifyDashboardtext.js" type="module" defer></script>
   </body>
 </html>
