@@ -1460,6 +1460,15 @@ function updateAlbumInfo(selectedAlbum, artistData, detailBox) {
   const peakYear = listensByYear.length ? listensByYear[0][0] : "N/A";
   const peakYearMinutes = listensByYear.length ? listensByYear[0][1] : 0;
 
+  // 🆕 Top Tracks calculation
+  const trackMinutes = d3.rollups(
+    filtered,
+    (v) => d3.sum(v, (d) => +d.ms_played / 60000),
+    (d) => d.master_metadata_track_name
+  );
+  trackMinutes.sort((a, b) => d3.descending(a[1], b[1]));
+  const topTracks = trackMinutes.slice(0, 3); // Top 5 tracks
+
   const firstTrackWithUri = filtered.find((d) => d.spotify_track_uri);
   let albumImageUrl = "";
 
@@ -1545,7 +1554,11 @@ function updateAlbumInfo(selectedAlbum, artistData, detailBox) {
       .html(
         `<p>You first listened to this album on <strong>${minDate.toLocaleDateString()}</strong>.</p>` +
         `<p>Total listening time: <strong>${totalAlbumMinutes.toFixed(1)} minutes</strong> across <strong>${totalAlbumPlays}</strong> plays.</p>` +
-        `<p>Your peak year was <strong>${peakYear}</strong> with <strong>${peakYearMinutes.toFixed(1)} minutes</strong>.</p>`
+        `<p>Your peak year was <strong>${peakYear}</strong> with <strong>${peakYearMinutes.toFixed(1)} minutes</strong>.</p>` +
+        `<br><p style="font-weight:bold;">Top Songs from this Album:</p>` +
+        topTracks.map(([track, minutes], i) =>
+          `<p style="margin:0;">${i + 1}. ${track} (${minutes.toFixed(1)} min)</p>`
+        ).join("")
       );
   }
 
@@ -1563,6 +1576,7 @@ function updateAlbumInfo(selectedAlbum, artistData, detailBox) {
     renderAlbumDetails();
   }
 }
+
 
 
 
@@ -1829,7 +1843,7 @@ function updateAllCharts(data, artistName) {
       .text("Select an album to see more details");
   }
   // Do not update the artist info here to prevent refreshing the info box
-  updatePeakListening(data, artistName);
+  //updatePeakListening(data, artistName);
   updateScatterPlot(data, artistName);
   updateBarChart(data, artistName);
   updateSunburstChart(data, artistName);

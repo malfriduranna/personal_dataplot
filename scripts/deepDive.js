@@ -798,21 +798,23 @@ function updateScatterPlot(data, artistName) {
     chartDiv = flexContainer.append("div").attr("class", "chart_svg");
   }
 
+  const margin = { top: 20, right: 20, bottom: 50, left: 50 },
+  innerWidth = 500 - margin.left - margin.right,
+  innerHeight = 300 - margin.top - margin.bottom;
+
   let svgEl = chartDiv.select("svg");
   if (svgEl.empty()) {
     svgEl = chartDiv
       .append("svg")
-      .attr("viewBox", "0 0 500 300")
-      .style("width", "510px")
-      .style("height", "300px");
-    svgEl = svgEl.append("g").attr("transform", "translate(30,30)");
+      .attr("viewBox", "0 0 550 350") // slightly bigger
+      .style("width", "550px")
+      .style("height", "350px");
+    svgEl = svgEl
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
   } else {
     svgEl = svgEl.select("g");
   }
-
-  const margin = { top: 20, right: 20, bottom: 50, left: 50 },
-    innerWidth = 500 - margin.left - margin.right,
-    innerHeight = 300 - margin.top - margin.bottom;
 
   const artistData = data.filter(
     (d) =>
@@ -820,50 +822,19 @@ function updateScatterPlot(data, artistName) {
       d.master_metadata_album_artist_name.toLowerCase() ===
         artistName.toLowerCase()
   );
+
   const trackStats = d3
     .rollups(
       artistData,
       (v) => {
         const totalMinutes = d3.sum(v, (d) => +d.ms_played / 60000);
-        const dayMap = d3.rollup(
-          v,
-          (vv) => d3.sum(vv, (d) => +d.ms_played / 60000),
-          (d) => new Date(d.ts).toLocaleDateString()
-        );
-        let mostPlayedDay = "",
-          mostMinutesInDay = 0;
-        dayMap.forEach((minutes, day) => {
-          if (minutes > mostMinutesInDay) {
-            mostMinutesInDay = minutes;
-            mostPlayedDay = day;
-          }
-        });
-
-        const dayCount = dayMap.size;
-        const periodCount = { Morning: 0, Afternoon: 0, Evening: 0, Night: 0 };
-        v.forEach((d) => {
-          const hour = new Date(d.ts).getHours();
-          let period = "";
-          if (hour >= 5 && hour < 12) period = "Morning";
-          else if (hour >= 12 && hour < 17) period = "Afternoon";
-          else if (hour >= 17 && hour < 21) period = "Evening";
-          else period = "Night";
-          periodCount[period]++;
-        });
-        let mostFrequentPeriod = "",
-          maxPeriodCount = 0;
-        for (const period in periodCount) {
-          if (periodCount[period] > maxPeriodCount) {
-            maxPeriodCount = periodCount[period];
-            mostFrequentPeriod = period;
-          }
-        }
 
         const yearMap = d3.rollup(
           v,
           (vv) => d3.sum(vv, (d) => +d.ms_played / 60000),
           (d) => new Date(d.ts).getFullYear()
         );
+
         let mostPlayedYear = "",
           mostMinutesInYear = 0;
         yearMap.forEach((minutes, year) => {
@@ -873,13 +844,14 @@ function updateScatterPlot(data, artistName) {
           }
         });
 
-        const maxMinutes = d3.max(Array.from(dayMap.values()));
+        const activeYears = yearMap.size;
+        const avgMinutesPerYear = totalMinutes / activeYears;
+
         return {
           totalMinutes,
-          maxMinutes,
-          dayCount,
-          mostPlayedDay,
-          mostFrequentPeriod,
+          mostMinutesInYear,
+          avgMinutesPerYear,
+          activeYears,
           mostPlayedYear,
         };
       },
@@ -896,28 +868,15 @@ function updateScatterPlot(data, artistName) {
       };
     });
 
-  const maxMinutesThreshold = d3.quantile(
-    trackStats.map((d) => d.maxMinutes).sort(d3.ascending),
-    0.99
-  );
-  const totalMinutesThreshold = d3.quantile(
-    trackStats.map((d) => d.totalMinutes).sort(d3.ascending),
-    0.99
-  );
-  const outliers = trackStats.filter(
-    (d) =>
-      d.maxMinutes > maxMinutesThreshold ||
-      d.totalMinutes > totalMinutesThreshold
-  );
-
   const x = d3
     .scaleLinear()
-    .domain([0, d3.max(trackStats, (d) => d.totalMinutes)])
+    .domain([0, d3.max(trackStats, (d) => d.mostMinutesInYear)])
     .nice()
     .range([0, innerWidth]);
+
   const y = d3
     .scaleLinear()
-    .domain([0, d3.max(trackStats, (d) => d.maxMinutes)])
+    .domain([0, d3.max(trackStats, (d) => d.avgMinutesPerYear)])
     .nice()
     .range([innerHeight, 0]);
 
@@ -929,6 +888,7 @@ function updateScatterPlot(data, artistName) {
     .call(d3.axisBottom(x))
     .selectAll("text")
     .style("font-size", "8px");
+
   svgEl
     .append("g")
     .attr("class", "y-axis")
@@ -940,34 +900,34 @@ function updateScatterPlot(data, artistName) {
     .append("text")
     .attr("class", "axis-label")
     .attr("x", innerWidth)
-    .attr("y", innerHeight + 25)
+    .attr("y", innerHeight + 40)
     .attr("text-anchor", "end")
     .style("font-size", "10px")
-    .text("Total Minutes Played");
+    .text("Max Minutes in a Single Year (Binge)");
+
   svgEl
     .append("text")
     .attr("class", "axis-label")
     .attr("transform", "rotate(-90)")
-    .attr("y", -25)
+    .attr("y", -40)
     .attr("x", -5)
     .attr("text-anchor", "end")
     .style("font-size", "9px")
-    .text("Max Minutes in a Day");
+    .text("Average Minutes per Year (Loyal)");
 
   const circles = svgEl.selectAll("circle").data(trackStats, (d) => d.track);
   circles.join(
     (enter) =>
       enter
         .append("circle")
-        .attr("cx", (d) => x(d.totalMinutes))
-        .attr("cy", (d) => y(d.maxMinutes))
+        .attr("cx", (d) => x(d.mostMinutesInYear))
+        .attr("cy", (d) => y(d.avgMinutesPerYear))
         .attr("r", 0)
         .attr("fill", "#69b3a2")
         .attr("opacity", 0.7)
         .style("cursor", "pointer")
         .on("click", (event, d) => {
           selectedTrackName = d.track;
-          // PLOT -------------------
           const rawData = artistData.filter(
             (e) => e.master_metadata_track_name === d.track
           );
@@ -1001,11 +961,24 @@ function updateScatterPlot(data, artistName) {
         update
           .transition()
           .duration(800)
-          .attr("cx", (d) => x(d.totalMinutes))
-          .attr("cy", (d) => y(d.maxMinutes))
+          .attr("cx", (d) => x(d.mostMinutesInYear))
+          .attr("cy", (d) => y(d.avgMinutesPerYear))
       ),
     (exit) =>
       exit.call((exit) => exit.transition().duration(800).attr("r", 0).remove())
+  );
+
+  const xThreshold = d3.quantile(
+    trackStats.map((d) => d.mostMinutesInYear).sort(d3.ascending),
+    0.99
+  );
+  const yThreshold = d3.quantile(
+    trackStats.map((d) => d.avgMinutesPerYear).sort(d3.ascending),
+    0.99
+  );
+
+  const outliers = trackStats.filter(
+    (d) => d.mostMinutesInYear > xThreshold || d.avgMinutesPerYear > yThreshold
   );
 
   const labels = svgEl.selectAll(".label").data(outliers, (d) => d.track);
@@ -1014,8 +987,8 @@ function updateScatterPlot(data, artistName) {
       enter
         .append("text")
         .attr("class", "label")
-        .attr("x", (d) => x(d.totalMinutes) + 8)
-        .attr("y", (d) => y(d.maxMinutes))
+        .attr("x", (d) => x(d.mostMinutesInYear) + 8)
+        .attr("y", (d) => y(d.avgMinutesPerYear))
         .attr("dy", "0.35em")
         .attr("text-anchor", "start")
         .text((d) => d.track)
@@ -1023,18 +996,18 @@ function updateScatterPlot(data, artistName) {
         .style("fill", "#333")
         .style("opacity", 0)
         .each(function () {
-          wrapText(d3.select(this), 50);
+          wrapText(d3.select(this), 50); // <= add wrapping here
         })
         .call((enter) => enter.transition().duration(800).style("opacity", 1)),
     (update) =>
       update
         .text((d) => d.track) // force update
-        .attr("x", (d) => x(d.totalMinutes) + 8)
-        .attr("y", (d) => y(d.maxMinutes))
+        .attr("x", (d) => x(d.mostMinutesInYear) + 8)
+        .attr("y", (d) => y(d.avgMinutesPerYear))
         .attr("dy", "0.35em")
         .attr("text-anchor", "start")
         .each(function () {
-          wrapText(d3.select(this), 50); // re-wrap
+          wrapText(d3.select(this), 50); // <= re-wrap on update
         })
         .call((update) => update.transition().duration(800)),
     (exit) =>
@@ -1061,7 +1034,6 @@ function updateScatterPlot(data, artistName) {
   if (selectedTrackName) {
     const updatedTrack = trackStats.find((t) => t.track === selectedTrackName);
     if (updatedTrack) {
-      // PLOT -------------------
       const rawData = artistData.filter(
         (e) => e.master_metadata_track_name === updatedTrack.track
       );
