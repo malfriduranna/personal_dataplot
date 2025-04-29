@@ -29,18 +29,7 @@
     <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
   </head>
   <body>
-    <header class="header">
-      <img src="img/Logo.png" class="header_logo" alt="Logo" />
-      <nav class="header_nav">
-        <ul>
-          <li><a href="personal_data/index.html">Home</a></li>
-          <li><a href="wrapped_page.html">Spotify Wrapped</a></li>
-          <li><a href="compareArtists.html">Compare</a></li>
-          <li><a href="dive_deeper.html">Dive Deeper</a></li>
-        </ul>
-      </nav>
-      <button class="button"><a>Login</a></button>
-    </header>
+    <div id="header-placeholder"></div>
 
     <main class="main">
       <!-- Section for Controls -->
@@ -140,19 +129,38 @@
       <div id="tooltip" class="tooltip"></div> <!-- Added tooltip class -->
     </main>
 
-    <footer class="footer">
-      <img src="img/Logo.png" class="footer_logo" alt="Logo" />
-      <nav class="footer_nav">
-        <ul>
-          <li><a href="/about">About</a></li>
-          <li><a href="/contact">Contact</a></li>
-          <li><a href="/privacy">Privacy</a></li>
-        </ul>
-      </nav>
-      <p class="footer_text">© 2025 YourSiteName</p>
-    </footer>
+    <div id="footer-placeholder"></div>
 
     <!-- Load the script as a module -->
     <script src="scripts/spotifyDashboard.js" type="module" defer></script>
+
+    <script>
+      function loadComponent(url, placeholderId) {
+        fetch(url)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+          })
+          .then((data) => {
+            const placeholder = document.getElementById(placeholderId);
+            if (placeholder) {
+              placeholder.innerHTML = data;
+            } else {
+              console.warn(
+                `Placeholder element with ID '${placeholderId}' not found.`
+              );
+            }
+          })
+          .catch((error) =>
+            console.error(`Error loading component ${url}:`, error)
+          );
+      }
+    
+      // Call the component loaders immediately
+      loadComponent("header.html", "header-placeholder");
+      loadComponent("footer.html", "footer-placeholder");
+    </script>
   </body>
 </html>
